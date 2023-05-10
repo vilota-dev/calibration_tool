@@ -1,0 +1,8 @@
+src/*.o
+src/imgui.ini
+src/logs
+src/example_app
+
+build/
+
+**/.DS_Store
