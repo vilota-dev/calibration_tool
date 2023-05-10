@@ -1,6 +1,14 @@
 ## Trouble shooting stuff
 - NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
 
+## Setup
+```
+mkdir build
+cd build/
+cmake ..
+cmake --build . -- -j
+```
+
 
 ### Prerequisites 
 
