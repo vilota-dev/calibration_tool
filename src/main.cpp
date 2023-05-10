@@ -15,10 +15,24 @@
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
 // External headers
-#include <algorithm>
+// #include "immvision/immvision.h"
 #include "basalt/calibration/calibration.hpp"
 #include <cereal/types/unordered_map.hpp>
+
+// START OF IMMVISION DEMO
+#include "immvision.h"
 #include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <filesystem>
+
+std::string ResourcesDir() {
+    std::filesystem::path this_file(__FILE__);
+    return (this_file.parent_path() / "resources").string(); // Need to change this
+}
+
+// END OF IMMVISION DEMO
 
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.

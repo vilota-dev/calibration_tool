@@ -22,3 +22,9 @@
 [submodule "eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen
+[submodule "immvision"]
+	path = external/immvision
+	url = https://github.com/pthom/immvision
+[submodule "glad"]
+	path = external/glad
+	url = https://github.com/Dav1dde/glad/

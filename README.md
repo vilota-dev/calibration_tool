@@ -1,6 +1,7 @@
 ## Trouble shooting stuff
 - NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
-
+- #define IMGUI_DEFINE_MATH_OPERATORS
+- I added this shit ^ before the include imgui.h in the immvision
 ## Setup
 ```
 mkdir build
