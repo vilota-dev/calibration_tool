@@ -1,20 +1,22 @@
 cmake_minimum_required(VERSION 3.10)
 project(calibration_tool)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find the required packages
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 # External directories
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/implot)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include)
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/basalt_headers/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/basalt_headers/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/cereal/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/Eigen)
 
 # External submodules (with their own CMakeLists.txt)
 add_subdirectory("external/nativefiledialog_extended")
@@ -42,6 +44,4 @@ set(SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glfw nfd Sophus::Sophus)
-
-
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glfw nfd Sophus::Sophus ${OpenCV_LIBS})

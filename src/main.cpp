@@ -14,9 +14,12 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-// Basalt headers
-// #include "basalt/calibration/calibration.hpp"
+// External headers
+#include <algorithm>
+#include "basalt/calibration/calibration.hpp"
 #include <cereal/types/unordered_map.hpp>
+#include <opencv2/opencv.hpp>
+
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.

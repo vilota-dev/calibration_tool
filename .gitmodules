@@ -19,3 +19,6 @@
 [submodule "Sophus"]
 	path = external/Sophus
 	url = https://github.com/strasdat/Sophus/
+[submodule "eigen"]
+	path = external/eigen
+	url = https://gitlab.com/libeigen/eigen
