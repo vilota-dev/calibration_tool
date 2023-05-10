@@ -10,3 +10,12 @@
 [submodule "nativefiledialog_extended"]
 	path = external/nativefiledialog_extended
 	url = https://github.com/btzy/nativefiledialog-extended
+[submodule "basalt_headers"]
+	path = external/basalt_headers
+	url = https://github.com/berndpfrommer/basalt-headers
+[submodule "cereal"]
+	path = external/cereal
+	url = https://github.com/USCiLab/cereal
+[submodule "Sophus"]
+	path = external/Sophus
+	url = https://github.com/strasdat/Sophus/
