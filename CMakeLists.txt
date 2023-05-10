@@ -13,9 +13,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/imgui)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/imgui/backends)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/implot)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/spdlog/include)
+# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/basalt_headers/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/cereal/include)
 
 # External submodules (with their own CMakeLists.txt)
 add_subdirectory("external/nativefiledialog_extended")
+add_subdirectory("external/Sophus")
 
 # Project submodules
 # include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/terminal)
@@ -39,6 +42,6 @@ set(SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glfw nfd)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenGL::GL glfw nfd Sophus::Sophus)
 
 
