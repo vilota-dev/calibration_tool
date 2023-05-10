@@ -1,0 +1,12 @@
+[submodule "imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "implot"]
+	path = external/implot
+	url = https://github.com/epezent/implot
+[submodule "spdlog"]
+	path = external/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "nativefiledialog_extended"]
+	path = external/nativefiledialog_extended
+	url = https://github.com/btzy/nativefiledialog-extended
