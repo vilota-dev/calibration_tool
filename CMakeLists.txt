@@ -4,6 +4,9 @@ project(calibration_tool)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Preprocessor Macros
+add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+
 # Find the required packages
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
@@ -25,11 +28,14 @@ add_subdirectory("external/nativefiledialog_extended")
 add_subdirectory("external/Sophus")
 
 # Project submodules
-# include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/terminal)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/gui)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/utils)
 
 # Add source files
 set(SOURCES
     src/main.cpp
+    src/gui/gui.cpp
+    src/utils/utils.cpp
     external/glad/src/glad.c
     external/imgui/imgui.cpp
     external/imgui/imgui_demo.cpp
