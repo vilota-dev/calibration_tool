@@ -1,4 +1,8 @@
-#include "utils.hpp"
+#pragma once
+
+#include "spdlog/spdlog.h"
+#include "imgui.h"
+#include <iostream>
 
 void setup_logger() {
     try {
@@ -23,4 +27,9 @@ void cleanup_logger() {
     spdlog::apply_all([&](std::shared_ptr<spdlog::logger> l) { l->debug("App exit"); });
     // Release all spdlog resources, and drop all loggers in the registry
     spdlog::shutdown();
+}
+
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false) {
+    auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
+    return res;
 }

@@ -9,3 +9,5 @@ build/
 .idea/
 cmake-build-debug
 data/
+
+**/CMakeFiles

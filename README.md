@@ -1,3 +1,7 @@
+## Todo
+- Make into dockspace
+- [Turn off unncessary builds like the building the tests](https://gist.github.com/UnaNancyOwen/acfc71de5b157d2ba22c090b420030e4)
+
 ## Trouble shooting stuff
 - NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
 - #define IMGUI_DEFINE_MATH_OPERATORS
@@ -29,23 +33,17 @@ Libraries for graphics (Mac OS)
 brew install glfw
 ```
 
-### Get Started
+## Preprocessor Macros
+`PROJECT_ROOT`: Points to root of project / where cmake was invoked.
 
-Change directories and Build
+## Submodules
+- [DearImGui](https://github.com/ocornut/imgui/tree/031148dc56d70158b3ad84d9be95b04bb3f5baaf)
+- [ImPlot](https://github.com/epezent/implot/tree/18758e237e8906a97ddf42de1e75793526f30ce9)
+- 
 
-```
-cd src
-make
-```
-
-Run
-
-```
-./example_app
-```
-
-Delete build files
-
-```
-make clean
-```
+## Other relevant repos
+[How to use visualizer in dear imgui application #5920](https://github.com/isl-org/Open3D/issues/5920)
+https://github.com/vilota-dev/calibration-experiment
+https://github.com/SMRT-AIST/interactive_slam/tree/master
+[Visualize point cloud](https://stackoverflow.com/questions/10106288/pcl-visualize-a-point-cloud)
+[Tanagram](https://www.tangramvision.com/resources/depth-sensor-visualizer)

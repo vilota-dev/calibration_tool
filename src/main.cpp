@@ -1,6 +1,5 @@
-#include "utils/utils.hpp"
-#include "gui/gui.hpp"
-
+#include "utils/utils.h"
+#include "gui/gui.h"
 
 int main(int, char **) {
     // Initialize logger

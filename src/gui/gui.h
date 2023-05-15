@@ -1,21 +1,65 @@
-#include "gui.hpp"
+#pragma once
 
-#define GL_SILENCE_DEPRECATION
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <GLES2/gl2.h>
-#endif
+#include "io/dataset_io.h"
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
+#include "implot.h"
+#include "immvision.h"
+#include <glad/glad.h> // Initialize with gladLoadGL()
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
+#include "io/dataset_io.h"
+#include "io/dataset_io_rosbag.h"
 
-// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
-#ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
-#endif
+#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include "spdlog/spdlog.h"
+#include <nfd.h>
+#include "rosbag_inspector.h"
+
+#include <cstdio>
+#include <filesystem>
+#include <cstdlib>
+
+struct Dataset {
+    std::string file_path;
+    basalt::DatasetIoInterfacePtr dataset_io;
+    basalt::VioDatasetPtr vio_dataset;
+//    const std::vector<basalt::ImageData> &img_vec; // Refers to the images for each camera at a certain timestamp
+
+    Dataset() = default;
+
+    void loadDataset(const std::filesystem::path &path) {
+        this->dataset_io = basalt::DatasetIoFactory::getDatasetIo("bag");
+
+        this->file_path = path.string();
+        dataset_io->read(this->file_path);
+
+        this->vio_dataset = dataset_io->get_data();
+
+        std::vector<int64_t> new_image_timestamps;
+        for (long long i : vio_dataset->get_image_timestamps()) { // Change back to non-range based for loop if cause error
+            new_image_timestamps.push_back(i);
+        }
+
+        this->vio_dataset->get_image_timestamps() = new_image_timestamps;
+    }
+};
+
+enum class Orientation {
+    Horizontal,
+    Vertical
+};
+
+struct SobelParams {
+    float blur_size = 1.25f;
+    int deriv_order = 1;  // order of the derivative
+    int k_size = 7;  // size of the extended Sobel kernel it must be 1, 3, 5, or 7 (or -1 for Scharr)
+    Orientation orientation = Orientation::Vertical;
+};
 
 std::string ResourcesDir() {
     std::filesystem::path root(PROJECT_ROOT); // use cmake preprocessor macros
@@ -86,6 +130,71 @@ bool GuiSobelParams(SobelParams &params) {
     return changed;
 }
 
+struct AppState {
+    cv::Mat image;
+    cv::Mat imageSobel;
+    SobelParams sobelParams;
+
+    ImmVision::ImageParams immvisionParams;
+    ImmVision::ImageParams immvisionParamsSobel;
+
+    AppState(const std::string &image_file) {
+        image = cv::imread(image_file);
+        sobelParams = SobelParams();
+        imageSobel = ComputeSobel(image, sobelParams);
+
+        immvisionParams = ImmVision::ImageParams();
+        immvisionParams.ImageDisplaySize = cv::Size(300, 0);
+        immvisionParams.ZoomKey = "z";
+
+        immvisionParamsSobel = ImmVision::ImageParams();
+        immvisionParamsSobel.ImageDisplaySize = cv::Size(600, 0);
+        immvisionParamsSobel.ZoomKey = "z";
+        immvisionParamsSobel.ShowOptionsPanel = true;
+    }
+};
+
+#define GL_SILENCE_DEPRECATION
+#if defined(IMGUI_IMPL_OPENGL_ES2)
+#include <GLES2/gl2.h>
+#endif
+
+void config_gui() {
+    ImGui::Begin("Calibration GUI");
+
+    // Make a slider for a slider for the frame
+    static int frame_slider = 0;
+    ImGui::SliderInt("Frame", &frame_slider, 0, 100);
+
+    static bool show_corners = false;
+    ImGui::Checkbox("Show corners", &show_corners);
+
+    static bool show_corners_rejected = false;
+    ImGui::Checkbox("Show corners rejected", &show_corners_rejected);
+
+    // make a slider int
+    static int threshold = 0;
+    ImGui::SliderInt("Gaussian Blur", &threshold, 0, 101);
+
+    if (ImGui::Button("Load Dataset")) {
+        spdlog::info("Loading dataset");
+        // Insert the NFDE stuff here
+    }
+
+    if (ImGui::Button("Detect Corners")) {
+        spdlog::info("Starting corner detection");
+        // Insert the NFDE stuff here
+    }
+
+    if (ImGui::Button("Optimize")) {
+        spdlog::info("Starting calibration");
+        // Optimize function
+    }
+
+    ImGui::End();
+
+}
+
 void calibrate_gui() {
     static AppState appState(ResourcesDir() + "/lenna.png");
 
@@ -104,12 +213,44 @@ void calibrate_gui() {
     ImmVision::Image("Deriv", appState.imageSobel, &appState.immvisionParamsSobel);
 }
 
+void draw_main_menu_bar(Dataset &data) {
+    static nfdchar_t *outPath;
+    static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
+
+    ImGui::BeginMainMenuBar();
+    if (ImGui::BeginMenu("File")) {
+        if (ImGui::MenuItem("Load .bag file")) {
+            nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, NULL);
+            if (result == NFD_OKAY) {
+                spdlog::info("Success!");
+                spdlog::info("File is located here: {}", outPath);
+                data.loadDataset(outPath);
+                NFD_FreePath(outPath);
+            } else if (result == NFD_CANCEL) {
+                spdlog::info("User pressed cancel.");
+            } else {
+                spdlog::error("Error: {}", NFD_GetError());
+            }
+        }
+        ImGui::EndMenu();
+    }
+
+    ImGui::EndMainMenuBar();
+}
+
 static void glfw_error_callback(int error, const char *description) {
     spdlog::error("GLFW Error {}: {}", error, description);
 }
 
 void run_gui() {
     spdlog::info("Starting GUI");
+
+    Dataset big_data;
+
+    // Initialize Native file dialog
+    NFD_Init();
+    nfdchar_t *outPath;
+    nfdresult_t result;
 
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
@@ -151,7 +292,7 @@ void run_gui() {
     glfwSwapInterval(1); // Enable vsync
 
     // Load Glad
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         std::exit(EXIT_FAILURE);
     }
@@ -205,16 +346,7 @@ void run_gui() {
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    // Main loop
-#ifdef __EMSCRIPTEN__
-    // For an Emscripten build we are disabling file-system access, so let's not attempt to do a fopen() of the imgui.ini file.
-    // You may manually call LoadIniSettingsFromMemory() to load settings from your own storage.
-    io.IniFilename = nullptr;
-    EMSCRIPTEN_MAINLOOP_BEGIN
-#else
-    while (!glfwWindowShouldClose(window))
-#endif
-    {
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
         // Start the Dear ImGui frame
@@ -222,7 +354,24 @@ void run_gui() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        config_gui();
         calibrate_gui();
+
+        draw_main_menu_bar(big_data);
+
+        static ROSbag bag;
+
+        if (ImGui::Begin("ROS .bag Inspector", nullptr, ImGuiWindowFlags_MenuBar)) {
+            static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
+
+            draw_menu_bar(bag, result, outPath);
+            int selected = draw_files_left_panel(0);
+
+            ImGui::SameLine();
+
+            draw_bag_content(bag, selected);
+        }
+        ImGui::End();
 
         // Rendering
         ImGui::Render();
@@ -246,14 +395,12 @@ void run_gui() {
 
         glfwSwapBuffers(window);
     }
-#ifdef __EMSCRIPTEN__
-    EMSCRIPTEN_MAINLOOP_END;
-#endif
 
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+    NFD_Quit();
 
     glfwDestroyWindow(window);
     glfwTerminate();
