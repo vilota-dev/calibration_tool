@@ -6,6 +6,7 @@
 - NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
 - #define IMGUI_DEFINE_MATH_OPERATORS
 - I added this shit ^ before the include imgui.h in the immvision
+- Segmentation faults -> More often then not it's got something to do with uninitialized vectors and ImGui library.
 ## Setup
 ```
 mkdir build
@@ -39,7 +40,12 @@ brew install glfw
 ## Submodules
 - [DearImGui](https://github.com/ocornut/imgui/tree/031148dc56d70158b3ad84d9be95b04bb3f5baaf)
 - [ImPlot](https://github.com/epezent/implot/tree/18758e237e8906a97ddf42de1e75793526f30ce9)
-- 
+- Basalt-headers
+- Cereal
+- Eigen
+- Glad
+- imgui
+- immvision
 
 ## Other relevant repos
 [How to use visualizer in dear imgui application #5920](https://github.com/isl-org/Open3D/issues/5920)

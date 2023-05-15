@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include "io/dataset_io.h"
@@ -28,7 +29,10 @@ struct Dataset {
     std::string file_path;
     basalt::DatasetIoInterfacePtr dataset_io;
     basalt::VioDatasetPtr vio_dataset;
-//    const std::vector<basalt::ImageData> &img_vec; // Refers to the images for each camera at a certain timestamp
+    // Variable to store number of cameras
+    size_t num_cams;
+    cv::Mat image; // Now we just have to read the ManagedImage into this fella and we are done. follow line 92 of dataset_io_uzh
+//    std::vector<basalt::ImageData> &img_vec; // Refers to the images for each camera at a certain timestamp
 
     Dataset() = default;
 
@@ -46,6 +50,49 @@ struct Dataset {
         }
 
         this->vio_dataset->get_image_timestamps() = new_image_timestamps;
+    }
+
+    std::vector<basalt::ImageData> feed_images(int64_t t_ns) {
+      const std::vector<basalt::ImageData> &img_vec = vio_dataset->get_image_data(t_ns);
+
+      for (size_t i = 0; i < img_vec.size(); i++) {
+        // Iterate over each ImageData in the vector
+        for (const auto& image_data : img_vec) {
+          // Extract the ManagedImage<uint16_t> pointer from the ImageData
+          const basalt::ManagedImage<uint16_t>::Ptr& managed_image_ptr = image_data.img;
+
+          // Check if the managed_image_ptr is valid
+          if (managed_image_ptr) {
+            // Extract the image properties from the managed_image_ptr
+            size_t width = managed_image_ptr->w;
+            size_t height = managed_image_ptr->h;
+            size_t pitch_bytes = managed_image_ptr->pitch;
+
+            // Create a cv::Mat with the appropriate size and data type
+            cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
+
+            // Create an 8-bit version of the image by right shifting the 16-bit values
+            cv::Mat image_mat_8u(height, width, CV_8U);
+            for (int y = 0; y < height; ++y) {
+              const uint16_t* src_ptr = image_mat_16u.ptr<uint16_t>(y);
+              uchar* dst_ptr = image_mat_8u.ptr<uchar>(y);
+              for (int x = 0; x < width; ++x) {
+                dst_ptr[x] = static_cast<uchar>(src_ptr[x] >> 8);  // Right shift by 8 bits
+              }
+            }
+
+            // Do something with the converted cv::Mat (e.g., perform image processing or display)
+            // ...
+
+            // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
+            // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
+            // otherwise, the cv::Mat will contain invalid data.
+          }
+        }
+      }
+
+      spdlog::info("Loaded dataset with {} images", img_vec.size());
+      return img_vec;
     }
 };
 
@@ -246,6 +293,61 @@ void run_gui() {
     spdlog::info("Starting GUI");
 
     Dataset big_data;
+    big_data.loadDataset("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/run1/2023-04-21-vk180-calib-run1.bag");
+
+    auto &timestamps = big_data.vio_dataset->get_image_timestamps();
+    std::vector<cv::Mat> display_imgs;
+    for (const auto& timestamp : timestamps) {
+      const std::vector<basalt::ImageData> &img_vec = big_data.vio_dataset->get_image_data(timestamp);
+//      spdlog::info("Timestamp: {} | Loaded {} images", timestamp, img_vec.size()); // Prints correct size
+//
+//      for (const auto& image_data : img_vec) {
+//        spdlog::info("Exposure is {}", image_data.exposure);
+//      }
+
+      for (size_t i = 0; i < img_vec.size(); i++) {
+        // Iterate over each ImageData in the vector
+        for (const auto& image_data : img_vec) {
+          // Extract the ManagedImage<uint16_t> pointer from the ImageData
+          const basalt::ManagedImage<uint16_t>::Ptr& managed_image_ptr = image_data.img;
+
+          // Check if the managed_image_ptr is valid
+          if (managed_image_ptr) {
+            spdlog::info("SUCEESS ITCH");
+            // Extract the image properties from the managed_image_ptr
+            size_t width = managed_image_ptr->w;
+            size_t height = managed_image_ptr->h;
+            size_t pitch_bytes = managed_image_ptr->pitch;
+
+            // Create a cv::Mat with the appropriate size and data type
+            cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
+
+            // Create an 8-bit version of the image by right shifting the 16-bit values
+            cv::Mat image_mat_8u(height, width, CV_8U);
+            for (int y = 0; y < height; ++y) {
+              const uint16_t* src_ptr = image_mat_16u.ptr<uint16_t>(y);
+              uchar* dst_ptr = image_mat_8u.ptr<uchar>(y);
+              for (int x = 0; x < width; ++x) {
+                dst_ptr[x] = static_cast<uchar>(src_ptr[x] >> 8);  // Right shift by 8 bits
+              }
+            }
+
+            display_imgs.push_back(image_mat_8u);
+
+            // Do something with the converted cv::Mat (e.g., perform image processing or display)
+            // ...
+
+            // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
+            // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
+            // otherwise, the cv::Mat will contain invalid data.
+          }
+        }
+      }
+    }
+
+
+
+    spdlog::info("Loaded {} images", display_imgs.size()); // Does not print correct size.
 
     // Initialize Native file dialog
     NFD_Init();
@@ -370,6 +472,17 @@ void run_gui() {
             ImGui::SameLine();
 
             draw_bag_content(bag, selected);
+
+            // Draw a button to call the load image function
+            if (ImGui::Button("Load Image")) {
+              // Print values of the image[0] cv::Mat using spdlog
+              spdlog::info("Image vector size: {}", display_imgs.size());
+//              spdlog::
+//              images = big_data.feed_images();
+//              ImmVision::Image("Original", show_this[0], &dogState.immvisionParams);
+            }
+            ImmVision::ImageDisplay("Cat", display_imgs[0]);
+
         }
         ImGui::End();
 
