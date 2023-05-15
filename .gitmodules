@@ -10,6 +10,7 @@
 [submodule "nativefiledialog_extended"]
 	path = external/nativefiledialog_extended
 	url = https://github.com/btzy/nativefiledialog-extended
+  ignore = dirty
 [submodule "basalt_headers"]
 	path = external/basalt_headers
 	url = https://github.com/berndpfrommer/basalt-headers
@@ -19,6 +20,7 @@
 [submodule "Sophus"]
 	path = external/Sophus
 	url = https://github.com/strasdat/Sophus/
+  ignore = dirty
 [submodule "eigen"]
 	path = external/eigen
 	url = https://gitlab.com/libeigen/eigen
