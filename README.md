@@ -46,6 +46,9 @@ brew install glfw
 - Glad
 - imgui
 - immvision
+- rosbag
+- spdlog
+- 
 
 ## Other relevant repos
 [How to use visualizer in dear imgui application #5920](https://github.com/isl-org/Open3D/issues/5920)
