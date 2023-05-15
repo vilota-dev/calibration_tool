@@ -3,6 +3,7 @@
 - [ ] Make into dockspace
 - [ ] Write wireframe for the visualizer, maybe a scrub bar for the rosbag images
 - [ ] Finish up the rosbag inspector to see the topics
+
 **Not important**
 - [ ] Change glfw to submodule dependency instead.
 
