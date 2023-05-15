@@ -5,8 +5,9 @@
 ## Trouble shooting stuff
 - NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
 - #define IMGUI_DEFINE_MATH_OPERATORS
-- I added this shit ^ before the include imgui.h in the immvision
+- I added this shit ^ before the include imgui.h in the immvision. Pushed to forked version of immvision, check under src_all_in_one.
 - Segmentation faults -> More often then not it's got something to do with uninitialized vectors and ImGui library.
+
 ## Setup
 ```
 mkdir build
