@@ -30,3 +30,10 @@
 [submodule "immvision"]
 	path = external/immvision
 	url = https://github.com/g-tejas/immvision
+[submodule "console_bridge"]
+	path = external/ros/console_bridge
+	url = https://github.com/ros/console_bridge/
+  ignore = dirty
+[submodule "roscpp_core"]
+	path = external/ros/roscpp_core
+	url = https://github.com/ros/roscpp_core
