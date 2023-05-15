@@ -1,21 +1,23 @@
 ## Todo
-- Make into dockspace
-- [Turn off unncessary builds like the building the tests](https://gist.github.com/UnaNancyOwen/acfc71de5b157d2ba22c090b420030e4)
+**Important**
+- [ ] Make into dockspace
+- [ ] Write wireframe for the visualizer, maybe a scrub bar for the rosbag images
+- [ ] Finish up the rosbag inspector to see the topics
+**Not important**
+- [ ] Change glfw to submodule dependency instead.
 
 ## Trouble shooting stuff
-- NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake
-- #define IMGUI_DEFINE_MATH_OPERATORS
-- I added this shit ^ before the include imgui.h in the immvision. Pushed to forked version of immvision, check under src_all_in_one.
+- NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake (hyphen in name not valid)
+- #define IMGUI_DEFINE_MATH_OPERATORS error, most likely an error in the order with which things have been imported
+  - Forked immvision and pushed changes to repo to quick fix the include headers in src_all_in_one.h
 - Segmentation faults -> More often then not it's got something to do with uninitialized vectors and ImGui library.
 
 ## Setup
 ```
-mkdir build
-cd build/
+mkdir build && cd build
 cmake ..
 cmake --build . -- -j
 ```
-
 
 ### Prerequisites 
 
