@@ -3,6 +3,7 @@
 - [ ] Make into dockspace
 - [ ] Write wireframe for the visualizer, maybe a scrub bar for the rosbag images
 - [ ] Finish up the rosbag inspector to see the topics
+- [ ] Change basalt-headers to be using 8 bit instead of 16 bit, so no need for conversion.
 
 **Not important**
 - [ ] Change glfw to submodule dependency instead.
@@ -12,6 +13,8 @@
 - #define IMGUI_DEFINE_MATH_OPERATORS error, most likely an error in the order with which things have been imported
   - Forked immvision and pushed changes to repo to quick fix the include headers in src_all_in_one.h
 - Segmentation faults -> More often then not it's got something to do with uninitialized vectors and ImGui library.
+- Use develop branch for most vilota repos
+- basalt-sqrt does not build on macos, the original basalt does, mirror as well.
 
 ## Setup
 ```
