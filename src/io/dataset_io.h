@@ -79,6 +79,7 @@ namespace basalt {
     public:
         virtual ~VioDataset(){};
 
+        virtual double get_size() const = 0;
         virtual size_t get_num_cams() const = 0;
         virtual std::set<std::string> get_camera_names() = 0;
         virtual std::string get_imu_name() = 0;

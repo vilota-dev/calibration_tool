@@ -50,6 +50,8 @@ namespace basalt {
     public:
         ~RosbagVioDataset() {}
 
+        double get_size() const { return bag->getSize(); }
+
         size_t get_num_cams() const { return num_cams; }
 
         std::set<std::string> get_camera_names() { return cam_topics; }
