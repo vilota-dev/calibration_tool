@@ -1,48 +1,17 @@
-/**
-BSD 3-Clause License
-
-This file is part of the Basalt project.
-https://gitlab.com/VladyslavUsenko/basalt.git
-
-Copyright (c) 2019, Vladyslav Usenko and Nikolaus Demmel.
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-* Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-* Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-* Neither the name of the copyright holder nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
 #pragma once
 
-#include <calibration/aprilgrid.h>
-#include <io/dataset_io.h>
-#include <utils/common_types.h>
-#include <basalt/calibration/calibration.hpp>
+#include "calibration/aprilgrid.h"
+#include "io/dataset_io.h"
+#include "utils/common_types.h"
 
+#include <basalt/utils/apriltag.h>
+#include <basalt/calibration/calibration.hpp>
+#include <basalt/serialization/headers_serialization.h>
+#include <spdlog/spdlog.h>
 #include <tbb/concurrent_unordered_map.h>
+#include <tbb/parallel_for.h>
 
 namespace basalt {
-
   struct CalibCornerData {
     Eigen::aligned_vector<Eigen::Vector2d> corners;
     std::vector<int> corner_ids;
@@ -78,25 +47,73 @@ namespace basalt {
 
   class CalibHelper {
   public:
-    static void detectCorners(const VioDatasetPtr& vio_data,
-                              const AprilGrid& april_grid,
-                              CalibCornerMap& calib_corners,
-                              CalibCornerMap& calib_corners_rejected);
+    static void detectCorners(const basalt::VioDatasetPtr &vio_data, const basalt::AprilGrid &april_grid,
+                              basalt::CalibCornerMap &calib_corners,
+                              basalt::CalibCornerMap &calib_corners_rejected) {
+      spdlog::info("Started detecting corners");
+
+      calib_corners.clear();
+      calib_corners_rejected.clear();
+
+      spdlog::info("Detecting corners with low ID = {}", april_grid.getLowId());
+
+      tbb::parallel_for(
+              tbb::blocked_range<size_t>(0, vio_data->get_image_timestamps().size()),
+              [&](const tbb::blocked_range<size_t> &r) {
+                const int numTags = april_grid.getTagCols() * april_grid.getTagRows();
+                ApriltagDetector ad(numTags);
+
+                for (size_t j = r.begin(); j != r.end(); ++j) {
+                  int64_t timestamp_ns = vio_data->get_image_timestamps()[j];
+                  const std::vector<ImageData> &img_vec =
+                          vio_data->get_image_data(timestamp_ns);
+
+                  for (size_t i = 0; i < img_vec.size(); i++) {
+                    if (img_vec[i].img.get()) {
+                      CalibCornerData ccd_good;
+                      CalibCornerData ccd_bad;
+                      ad.detectTags(*img_vec[i].img, ccd_good.corners,
+                                    ccd_good.corner_ids, ccd_good.radii,
+                                    ccd_bad.corners, ccd_bad.corner_ids, ccd_bad.radii);
+
+                      spdlog::debug("image ({},{})  detected {} corners ({} rejected)",
+                                    timestamp_ns, i, ccd_good.corners.size(),
+                                    ccd_bad.corners.size());
+
+                      TimeCamId tcid(timestamp_ns, i);
+
+                      calib_corners.emplace(tcid, ccd_good);
+                      calib_corners_rejected.emplace(tcid, ccd_bad);
+                    }
+                  }
+                }
+              });
+
+      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/stuff_detected_corners.cereal";
+      std::ofstream os(path, std::ios::binary);
+      cereal::BinaryOutputArchive archive(os);
+
+      archive(calib_corners);
+      archive(calib_corners_rejected);
+
+      std::cout << "Done detecting corners. Saved them here: " << path
+                << std::endl;
+    }
 
     static void initCamPoses(
-            const Calibration<double>::Ptr& calib,
-            const Eigen::aligned_vector<Eigen::Vector4d>& aprilgrid_corner_pos_3d,
-            CalibCornerMap& calib_corners, CalibInitPoseMap& calib_init_poses);
+            const Calibration<double>::Ptr &calib,
+            const Eigen::aligned_vector<Eigen::Vector4d> &aprilgrid_corner_pos_3d,
+            CalibCornerMap &calib_corners, CalibInitPoseMap &calib_init_poses);
 
     static bool initializeIntrinsics(
-            const Eigen::aligned_vector<Eigen::Vector2d>& corners,
-            const std::vector<int>& corner_ids, const AprilGrid& aprilgrid, int cols,
-            int rows, Eigen::Vector4d& init_intr);
+            const Eigen::aligned_vector<Eigen::Vector2d> &corners,
+            const std::vector<int> &corner_ids, const AprilGrid &aprilgrid, int cols,
+            int rows, Eigen::Vector4d &init_intr);
 
     static bool initializeIntrinsicsPinhole(
-            const std::vector<CalibCornerData*> pinhole_corners,
-            const AprilGrid& aprilgrid, int cols, int rows,
-            Eigen::Vector4d& init_intr);
+            const std::vector<CalibCornerData *> pinhole_corners,
+            const AprilGrid &aprilgrid, int cols, int rows,
+            Eigen::Vector4d &init_intr);
 
   private:
     inline static double square(double x) { return x * x; }
@@ -106,28 +123,28 @@ namespace basalt {
     }
 
     static void computeInitialPose(
-            const Calibration<double>::Ptr& calib, size_t cam_id,
-            const Eigen::aligned_vector<Eigen::Vector4d>& aprilgrid_corner_pos_3d,
-            const basalt::CalibCornerData& cd, basalt::CalibInitPoseData& cp);
+            const Calibration<double>::Ptr &calib, size_t cam_id,
+            const Eigen::aligned_vector<Eigen::Vector4d> &aprilgrid_corner_pos_3d,
+            const basalt::CalibCornerData &cd, basalt::CalibInitPoseData &cp);
 
     static size_t computeReprojectionError(
-            const UnifiedCamera<double>& cam_calib,
-            const Eigen::aligned_vector<Eigen::Vector2d>& corners,
-            const std::vector<int>& corner_ids,
-            const Eigen::aligned_vector<Eigen::Vector4d>& aprilgrid_corner_pos_3d,
-            const Sophus::SE3d& T_target_camera, double& error);
+            const UnifiedCamera<double> &cam_calib,
+            const Eigen::aligned_vector<Eigen::Vector2d> &corners,
+            const std::vector<int> &corner_ids,
+            const Eigen::aligned_vector<Eigen::Vector4d> &aprilgrid_corner_pos_3d,
+            const Sophus::SE3d &T_target_camera, double &error);
   };
 
 }  // namespace basalt
 
 namespace cereal {
-  template <class Archive>
-  void serialize(Archive& ar, basalt::CalibCornerData& c) {
+  template<class Archive>
+  void serialize(Archive &ar, basalt::CalibCornerData &c) {
     ar(c.corners, c.corner_ids, c.radii, c.seq);
   }
 
-  template <class Archive>
-  void serialize(Archive& ar, basalt::CalibInitPoseData& c) {
+  template<class Archive>
+  void serialize(Archive &ar, basalt::CalibInitPoseData &c) {
     ar(c.T_a_c, c.num_inliers, c.reprojected_corners);
   }
 }  // namespace cereal

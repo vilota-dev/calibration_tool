@@ -13,17 +13,10 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory("external")
 
 # Add source files
-set(SOURCES
-  src/main.cpp
-  src/io/dataset_io.cpp
-  src/calibration/aprilgrid.cpp
-  )
+set(SOURCES src/main.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE
-  gui
-  non_gui
-  )
+target_link_libraries(${PROJECT_NAME} PRIVATE gui non_gui)

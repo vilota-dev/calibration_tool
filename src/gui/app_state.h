@@ -1,13 +1,10 @@
 #pragma once
 
 #include "io/dataset_io.h"
-#include "io/dataset_io_rosbag.h"
-#include "calibration/aprilgrid.h"
-#include "rosbag_inspector.h"
-#include "calibration/aprilgrid.h"
+#include "gui/rosbag_inspector.h"
 #include "calibration/calibration_helper.h"
-#include <basalt/serialization/headers_serialization.h>
 
+#include <basalt/serialization/headers_serialization.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -19,10 +16,11 @@
 
 using namespace basalt;
 
-struct AppState1 {
+struct AppState {
   // All other configs, can look at the field vars of VioDataset or RosbagIO to check, keep this struct empty
   std::string file_path; // Only able to store one .bag file at a time
   double file_size;
+
   RosbagIO rosbag_io;
 //  std::map<std::string, std::vector<std::string>> topics_to_message_types;
   //basalt::VioDatasetPtr &dataset; // Can access the rosbag file by pressing .bag here
@@ -33,7 +31,11 @@ struct AppState1 {
   CalibCornerMap calib_corners;
   CalibCornerMap calib_corners_rejected;
 
-  AppState1(std::string april_grid_path) : april_grid(april_grid_path) {};
+  std::map<std::string, std::vector<std::string>> topics_to_message_types;
+  std::shared_ptr<std::thread> processing_thread;
+
+
+  AppState(std::string april_grid_path) : april_grid(april_grid_path) {};
 
   void loadDataset(const std::filesystem::path &path) {
     this->file_path = path.string();
@@ -42,7 +44,7 @@ struct AppState1 {
     //this->dataset = this->rosbag_io.get_data(); // data is a private member of rosbag_io, so copy reference
     // Replace dataset with rosbag_io.get_data() because shared_ptr
 
-    this->file_size = this->rosbag_io.get_data()->get_size();
+    this->file_size = 1.0 * this->rosbag_io.get_data()->get_size() / (1024LL * 1024LL);
 
     this->image_timestamps = this->rosbag_io.get_data()->get_image_timestamps();
     spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
@@ -63,9 +65,18 @@ struct AppState1 {
         archive(calib_corners);
         archive(calib_corners_rejected);
 
-        std::cout << "Loaded detected corners from: " << path << std::endl;
+        spdlog::info("Loaded detected corners from: {}", path);
       } else {
-        std::cout << "No pre-processed detected corners found" << std::endl;
+        spdlog::info("No pre-processed detected corners found");
+      }
+    }
+
+    // Get the topics_to_message_types
+    {
+      rosbag::View entire_bag_view(*rosbag_io.get_data().get()->get_bag());
+
+      for (auto &&m: entire_bag_view) {
+        topics_to_message_types[m.getTopic()].push_back(m.getDataType());
       }
     }
   }
@@ -138,7 +149,7 @@ struct AppState1 {
       // The radius is the threshold used for maximum displacement.
       // The search region is slightly larger.
       const float radius = static_cast<float>(cr.radii[i]);
-      const Eigen::Vector2d& c = cr.corners[i];
+      const Eigen::Vector2d &c = cr.corners[i];
 
       cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
                  cv::Scalar(0, 255, 0), 1, cv::LINE_AA);

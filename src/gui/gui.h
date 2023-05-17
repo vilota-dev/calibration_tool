@@ -1,16 +1,15 @@
 #pragma once
 
 #include "io/dataset_io.h"
-#include "app_state.h"
-#include "corner_detection/detect_corner.h"
+#include "gui/rosbag_inspector.h"
+
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
 #include "immvision.h"
 #include <glad/glad.h> // Initialize with gladLoadGL()
-#include <GLFW/glfw3.h> // Will drag system OpenGL headerss
-
+#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -21,111 +20,6 @@
 #include <cstdio>
 #include <filesystem>
 #include <cstdlib>
-
-enum class Orientation {
-  Horizontal,
-  Vertical
-};
-
-struct SobelParams {
-  float blur_size = 1.25f;
-  int deriv_order = 1;  // order of the derivative
-  int k_size = 7;  // size of the extended Sobel kernel it must be 1, 3, 5, or 7 (or -1 for Scharr)
-  Orientation orientation = Orientation::Vertical;
-};
-
-std::string ResourcesDir() {
-  std::filesystem::path root(PROJECT_ROOT); // use cmake preprocessor macros
-  return (root / "data").string(); // Need to change this
-}
-
-cv::Mat ComputeSobel(const cv::Mat &image, const SobelParams &params) {
-  cv::Mat gray;
-  cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
-  cv::Mat img_float;
-  gray.convertTo(img_float, CV_32F, 1.0 / 255.0);
-  cv::Mat blurred;
-  cv::GaussianBlur(img_float, blurred, cv::Size(), params.blur_size, params.blur_size);
-
-  double good_scale = 1.0 / std::pow(2.0, (params.k_size - 2 * params.deriv_order - 2));
-
-  int dx, dy;
-  if (params.orientation == Orientation::Vertical) {
-    dx = params.deriv_order;
-    dy = 0;
-  } else {
-    dx = 0;
-    dy = params.deriv_order;
-  }
-  cv::Mat r;
-  cv::Sobel(blurred, r, CV_64F, dx, dy, params.k_size, good_scale);
-  return r;
-}
-
-bool GuiSobelParams(SobelParams &params) {
-  bool changed = false;
-
-  // Blur size
-  ImGui::SetNextItemWidth(ImGui::GetFontSize() * 10);
-  if (ImGui::SliderFloat("Blur size", &params.blur_size, 0.5f, 10.0f)) {
-    changed = true;
-  }
-  ImGui::SameLine();
-  ImGui::Text(" | ");
-  ImGui::SameLine();
-
-  // Deriv order
-  ImGui::Text("Deriv order");
-  ImGui::SameLine();
-  for (int deriv_order = 1; deriv_order <= 4; ++deriv_order) {
-    if (ImGui::RadioButton(std::to_string(deriv_order).c_str(), params.deriv_order == deriv_order)) {
-      changed = true;
-      params.deriv_order = deriv_order;
-    }
-    ImGui::SameLine();
-  }
-
-  ImGui::Text(" | ");
-  ImGui::SameLine();
-
-  ImGui::Text("Orientation");
-  ImGui::SameLine();
-  if (ImGui::RadioButton("Horizontal", params.orientation == Orientation::Horizontal)) {
-    changed = true;
-    params.orientation = Orientation::Horizontal;
-  }
-  ImGui::SameLine();
-  if (ImGui::RadioButton("Vertical", params.orientation == Orientation::Vertical)) {
-    changed = true;
-    params.orientation = Orientation::Vertical;
-  }
-
-  return changed;
-}
-
-struct AppState {
-  cv::Mat image;
-  cv::Mat imageSobel;
-  SobelParams sobelParams;
-
-  ImmVision::ImageParams immvisionParams;
-  ImmVision::ImageParams immvisionParamsSobel;
-
-  AppState(const std::string &image_file) {
-    image = cv::imread(image_file);
-    sobelParams = SobelParams();
-    imageSobel = ComputeSobel(image, sobelParams);
-
-    immvisionParams = ImmVision::ImageParams();
-    immvisionParams.ImageDisplaySize = cv::Size(300, 0);
-    immvisionParams.ZoomKey = "z";
-
-    immvisionParamsSobel = ImmVision::ImageParams();
-    immvisionParamsSobel.ImageDisplaySize = cv::Size(600, 0);
-    immvisionParamsSobel.ZoomKey = "z";
-    immvisionParamsSobel.ShowOptionsPanel = true;
-  }
-};
 
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -168,25 +62,7 @@ void config_gui() {
 
 }
 
-void calibrate_gui() {
-  static AppState appState(ResourcesDir() + "/lenna.png");
-
-  ImGui::TextWrapped(R"(
-        This example shows a example of image processing (sobel filter) where you can adjust the params and see their effect in real time.
-
-        Apply Colormaps to the filtered image in the options tab.
-    )");
-  ImGui::Separator();
-
-  if (GuiSobelParams(appState.sobelParams)) {
-    appState.imageSobel = ComputeSobel(appState.image, appState.sobelParams);
-    appState.immvisionParamsSobel.RefreshImage = true;
-  }
-  ImmVision::Image("Original", appState.image, &appState.immvisionParams);
-  ImmVision::Image("Deriv", appState.imageSobel, &appState.immvisionParamsSobel);
-}
-
-void draw_main_menu_bar(AppState1 &data) {
+void draw_main_menu_bar(AppState &data) {
   static nfdchar_t *outPath;
   static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
 
@@ -218,13 +94,13 @@ static void glfw_error_callback(int error, const char *description) {
 void run_gui() {
   spdlog::info("Starting GUI");
 
-  AppState1 app_state("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/aprilgrid_6x6_15.5percent.json");
+  AppState app_state("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/aprilgrid_6x6_15.5percent.json");
   app_state.loadDataset("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/run1/2023-04-21-vk180-calib-run1.bag");
 
   // Check if calib corners is empty
   if (app_state.calib_corners.empty()) {
     spdlog::info("Calib corners is empty, starting corner detection");
-    detectCorners(app_state.rosbag_io.get_data(), app_state.april_grid, app_state.calib_corners, app_state.calib_corners_rejected);
+    CalibHelper::detectCorners(app_state.rosbag_io.get_data(), app_state.april_grid, app_state.calib_corners, app_state.calib_corners_rejected);
   } else {
     spdlog::info("Cache file found, skipping corner detection");
   }
@@ -344,28 +220,10 @@ void run_gui() {
     ImGui::ShowDemoWindow(&show_demo_window);
 
     config_gui();
-    calibrate_gui();
 
     draw_main_menu_bar(app_state);
 
-    static ROSbag bag;
-
-    if (ImGui::Begin("ROS .bag Inspector", nullptr, ImGuiWindowFlags_MenuBar)) {
-      static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
-
-      draw_menu_bar(bag, result, outPath);
-      int selected = draw_files_left_panel(0);
-
-      ImGui::SameLine();
-
-      draw_bag_content(bag, selected);
-
-      // Draw a button to call the load image function
-      if (ImGui::Button("Load Image")) {
-        // Print values of the image[0] cv::Mat using spdlog
-      }
-    }
-    ImGui::End();
+    draw_rosbag_inspector(app_state);
 
     if (ImGui::Begin("Image Display")) {
 
