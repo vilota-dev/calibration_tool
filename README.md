@@ -1,8 +1,6 @@
 ## Todo
 **Important**
-- [ ] Make into dockspace
 - [ ] Write wireframe for the visualizer, maybe a scrub bar for the rosbag images
-- [ ] Finish up the rosbag inspector to see the topics
 - [ ] Change basalt-headers to be using 8 bit instead of 16 bit, so no need for conversion.
   - Currently using this [method](https://stackoverflow.com/questions/51549624/how-to-convert-16-bit-image-to-8-bit-in-opencv-c) to convert 16 bit to 8 bit.
   - API can be found [here](https://docs.opencv.org/3.4/d3/d63/classcv_1_1Mat.html)
