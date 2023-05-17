@@ -37,3 +37,4 @@
 [submodule "basalt-headers"]
 	path = external/basalt-headers
 	url = https://gitlab.com/VladyslavUsenko/basalt-headers/
+  ignore = dirty

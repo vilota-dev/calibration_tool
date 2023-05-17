@@ -1,16 +1,15 @@
 #pragma once
 
 #include "io/dataset_io.h"
+#include "app_state.h"
+#include "corner_detection/detect_corner.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "implot.h"
 #include "immvision.h"
 #include <glad/glad.h> // Initialize with gladLoadGL()
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
-
-#include "io/dataset_io.h"
-#include "io/dataset_io_rosbag.h"
+#include <GLFW/glfw3.h> // Will drag system OpenGL headerss
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/core.hpp>
@@ -18,149 +17,10 @@
 #include <opencv2/imgcodecs.hpp>
 #include "spdlog/spdlog.h"
 #include <nfd.h>
-#include "rosbag_inspector.h"
 
 #include <cstdio>
 #include <filesystem>
 #include <cstdlib>
-
-struct AppState1 {
-  // All other configs, can look at the field vars of VioDataset or RosbagIO to check, keep this struct empty
-  std::string file_path; // Only able to store one .bag file at a time
-  double file_size;
-  basalt::RosbagIO rosbag_io;
-//  std::map<std::string, std::vector<std::string>> topics_to_message_types;
-  //basalt::VioDatasetPtr &dataset; // Can access the rosbag file by pressing .bag here
-  std::vector<int64_t> image_timestamps;
-  // map from timestamp to cv::Mat
-  std::map<int64_t, std::vector<cv::Mat>> image_data; // Must be ready to plot
-
-  AppState1() = default;
-
-  void loadDataset(std::string path) {
-    this->file_path = path;
-    this->rosbag_io.read(path);
-
-    //this->dataset = this->rosbag_io.get_data(); // data is a private member of rosbag_io, so copy reference
-    // Replace dataset with rosbag_io.get_data() because shared_ptr
-
-    this->file_size = this->rosbag_io.get_data()->get_size();
-
-    this->image_timestamps = this->rosbag_io.get_data()->get_image_timestamps();
-    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
-
-    this->feed_images();
-  }
-
-  void feed_images() {
-    for (int64_t t_ns: this->image_timestamps) {
-      std::vector<cv::Mat> cv_img_vec; // One vector for each timestamp
-      const std::vector<basalt::ImageData> &img_vec = this->rosbag_io.get_data()->get_image_data(t_ns);
-
-      for (size_t cam_id = 0; cam_id < this->rosbag_io.get_data()->get_num_cams(); cam_id++) {
-        const basalt::ManagedImage<uint16_t>::Ptr &managed_image_ptr = img_vec[cam_id].img;
-
-        // Check if the managed_image_ptr is valid
-        if (managed_image_ptr) {
-          // Extract the image properties from the managed_image_ptr
-          size_t width = managed_image_ptr->w;
-          size_t height = managed_image_ptr->h;
-          size_t pitch_bytes = managed_image_ptr->pitch;
-
-          // Create a cv::Mat with the appropriate size and data type
-          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
-
-          cv::Mat image_mat_8u;
-          image_mat_16u.convertTo(image_mat_8u, CV_8U, 1.0 / 256.0);
-
-          cv_img_vec.push_back(image_mat_8u);
-
-          // Do something with the converted cv::Mat (e.g., perform image processing or display)
-          // ...
-
-          // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
-          // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
-          // otherwise, the cv::Mat will contain invalid data.
-        }
-      }
-
-      this->image_data.insert({t_ns, cv_img_vec});
-    }
-
-    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
-  }
-};
-
-struct Dataset {
-  std::string file_path;
-  basalt::DatasetIoInterfacePtr dataset_io;
-  basalt::VioDatasetPtr vio_dataset;
-  // Variable to store number of cameras
-  size_t num_cams;
-  cv::Mat image; // Now we just have to read the ManagedImage into this fella and we are done. follow line 92 of dataset_io_uzh
-//    std::vector<basalt::ImageData> &img_vec; // Refers to the images for each camera at a certain timestamp
-
-  Dataset() = default;
-
-  void loadDataset(const std::filesystem::path &path) {
-    this->dataset_io = basalt::DatasetIoFactory::getDatasetIo("bag");
-
-    this->file_path = path.string();
-    dataset_io->read(this->file_path);
-
-    this->vio_dataset = dataset_io->get_data();
-
-    std::vector<int64_t> new_image_timestamps;
-    for (long long i: vio_dataset->get_image_timestamps()) { // Change back to non-range based for loop if cause error
-      new_image_timestamps.push_back(i);
-    }
-
-    this->vio_dataset->get_image_timestamps() = new_image_timestamps;
-  }
-
-  std::vector<basalt::ImageData> feed_images(int64_t t_ns) {
-    const std::vector<basalt::ImageData> &img_vec = vio_dataset->get_image_data(t_ns);
-
-    for (size_t i = 0; i < img_vec.size(); i++) {
-      // Iterate over each ImageData in the vector
-      for (const auto &image_data: img_vec) {
-        // Extract the ManagedImage<uint16_t> pointer from the ImageData
-        const basalt::ManagedImage<uint16_t>::Ptr &managed_image_ptr = image_data.img;
-
-        // Check if the managed_image_ptr is valid
-        if (managed_image_ptr) {
-          // Extract the image properties from the managed_image_ptr
-          size_t width = managed_image_ptr->w;
-          size_t height = managed_image_ptr->h;
-          size_t pitch_bytes = managed_image_ptr->pitch;
-
-          // Create a cv::Mat with the appropriate size and data type
-          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
-
-          // Create an 8-bit version of the image by right shifting the 16-bit values
-          cv::Mat image_mat_8u(height, width, CV_8U);
-          for (int y = 0; y < height; ++y) {
-            const uint16_t *src_ptr = image_mat_16u.ptr<uint16_t>(y);
-            uchar *dst_ptr = image_mat_8u.ptr<uchar>(y);
-            for (int x = 0; x < width; ++x) {
-              dst_ptr[x] = static_cast<uchar>(src_ptr[x] >> 8);  // Right shift by 8 bits
-            }
-          }
-
-          // Do something with the converted cv::Mat (e.g., perform image processing or display)
-          // ...
-
-          // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
-          // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
-          // otherwise, the cv::Mat will contain invalid data.
-        }
-      }
-    }
-
-    spdlog::info("Loaded dataset with {} images", img_vec.size());
-    return img_vec;
-  }
-};
 
 enum class Orientation {
   Horizontal,
@@ -326,7 +186,7 @@ void calibrate_gui() {
   ImmVision::Image("Deriv", appState.imageSobel, &appState.immvisionParamsSobel);
 }
 
-void draw_main_menu_bar(Dataset &data) {
+void draw_main_menu_bar(AppState1 &data) {
   static nfdchar_t *outPath;
   static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
 
@@ -358,42 +218,34 @@ static void glfw_error_callback(int error, const char *description) {
 void run_gui() {
   spdlog::info("Starting GUI");
 
-  AppState1 app_state;
+  AppState1 app_state("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/aprilgrid_6x6_15.5percent.json");
   app_state.loadDataset("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/run1/2023-04-21-vk180-calib-run1.bag");
 
+  // Check if calib corners is empty
+  if (app_state.calib_corners.empty()) {
+    spdlog::info("Calib corners is empty, starting corner detection");
+    detectCorners(app_state.rosbag_io.get_data(), app_state.april_grid, app_state.calib_corners, app_state.calib_corners_rejected);
+  } else {
+    spdlog::info("Cache file found, skipping corner detection");
+  }
 
-  Dataset big_data;
-//  big_data.loadDataset(
-//          "/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/run1/2023-04-21-vk180-calib-run1.bag");
+  const std::vector<basalt::ImageData> &img_vec = app_state.rosbag_io.get_data()->get_image_data(633071364884620);
+  cv::Mat image = app_state.convert(img_vec[0].img);
+  int64_t timestamp_ns = app_state.rosbag_io.get_data()->get_image_timestamps()[0];
+  TimeCamId tcid(633071364884620, 0);
 
-//  auto &timestamps = big_data.vio_dataset->get_image_timestamps();
-//  std::vector<cv::Mat> display_imgs;
-//  for (const auto &timestamp: timestamps) {
-//    const std::vector<basalt::ImageData> &img_vec = big_data.vio_dataset->get_image_data(timestamp);
-//    for (size_t i = 0; i < img_vec.size(); i++) {
-//      // Iterate over each ImageData in the vector
-//      for (const auto &image_data: img_vec) {
-//        // Extract the ManagedImage<uint16_t> pointer from the ImageData
-//        const basalt::ManagedImage<uint16_t>::Ptr &managed_image_ptr = image_data.img;
-//
-//        // Check if the managed_image_ptr is valid
-//        if (managed_image_ptr) {
-//          // Extract the image properties from the managed_image_ptr
-//          size_t width = managed_image_ptr->w;
-//          size_t height = managed_image_ptr->h;
-//          size_t pitch_bytes = managed_image_ptr->pitch;
-//
-//          // Create a cv::Mat with the appropriate size and data type
-//          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
-//
-//          cv::Mat image_mat_8u;
-//          image_mat_16u.convertTo(image_mat_8u, CV_8U, 1.0 / 256.0);
-//
-//          display_imgs.push_back(image_mat_8u);
-//        }
-//      }
-//    }
-//  }
+  const CalibCornerData &cr = app_state.calib_corners.at(tcid);
+  const CalibCornerData &cr_rej = app_state.calib_corners_rejected.at(tcid);
+
+  for (size_t i = 0; i < cr.corners.size(); i++) {
+    // The radius is the threshold used for maximum displacement.
+    // The search region is slightly larger.
+    const float radius = static_cast<float>(cr.radii[i]);
+    const Eigen::Vector2d& c = cr.corners[i];
+
+    cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
+               cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+  }
 
   // Initialize Native file dialog
   NFD_Init();
@@ -441,7 +293,7 @@ void run_gui() {
 
   // Load Glad
   if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-    std::cout << "Failed to initialize GLAD" << std::endl;
+    spdlog::error("Failed to initialize GLAD");
     std::exit(EXIT_FAILURE);
   }
 
@@ -472,26 +324,9 @@ void run_gui() {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  // Load Fonts
-  // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-  // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-  // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-  // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-  // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-  // - Read 'docs/FONTS.md' for more instructions and details.
-  // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-  // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-  //io.Fonts->AddFontDefault();
-  //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-  //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-  //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-  //IM_ASSERT(font != nullptr);
-
   // Our state
   bool show_demo_window = true;
-  bool show_another_window = false;
+  //bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   while (!glfwWindowShouldClose(window)) {
@@ -502,10 +337,16 @@ void run_gui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    // For Dockspace stuff
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
+    // Show Demo window
+    ImGui::ShowDemoWindow(&show_demo_window);
+
     config_gui();
     calibrate_gui();
 
-    draw_main_menu_bar(big_data);
+    draw_main_menu_bar(app_state);
 
     static ROSbag bag;
 
@@ -527,9 +368,14 @@ void run_gui() {
     ImGui::End();
 
     if (ImGui::Begin("Image Display")) {
-      ImmVision::ImageDisplay("Cat", app_state.image_data.at(app_state.image_timestamps[0])[0]);
-      ImmVision::ImageDisplay("Dog", app_state.image_data.at(app_state.image_timestamps[0])[1]);
-      ImmVision::ImageDisplay("Pig", app_state.image_data.at(app_state.image_timestamps[0])[2]);
+
+      ImmVision::ImageDisplay("Fk", image); //img_vec[0].img.get()
+      ImmVision::ImageDisplay("Fk2", app_state.convert(img_vec[0].img)); //img_vec[0].img.get()
+      ImmVision::ImageDisplay("Fk3", app_state.convert(img_vec[2].img)); //img_vec[0].img.get()
+
+//      ImmVision::ImageDisplay("Cat", app_state.image_data.at(app_state.image_timestamps[1])[0]);
+//      ImmVision::ImageDisplay("Dog", app_state.image_data.at(app_state.image_timestamps[2])[1]);
+//      ImmVision::ImageDisplay("Pig", app_state.image_data.at(app_state.image_timestamps[3])[2]);
     }
     ImGui::End();
 
