@@ -37,7 +37,7 @@ void setup_logger() {
         // Customize msg format for all loggers
         spdlog::set_pattern("[%D %H:%M:%S] [%^%L%$] [thread %t] %v");
         // Set global log level to info
-        spdlog::set_level(spdlog::level::debug);
+        spdlog::set_level(spdlog::level::trace);
 
         // Flush all *registered* loggers using a worker thread every 3 seconds.
         // note: registered loggers *must* be thread safe for this to work correctly!

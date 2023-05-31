@@ -38,6 +38,3 @@
 	path = external/basalt-headers
 	url = https://gitlab.com/VladyslavUsenko/basalt-headers/
   ignore = dirty
-[submodule "libcbdetect"]
-	path = external/libcbdetect
-	url = https://github.com/aaronlws95/casio_libcbdetect
