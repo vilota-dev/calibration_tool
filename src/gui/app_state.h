@@ -1,122 +1,161 @@
 #pragma once
 
-#include "io/dataset_io.h"
-#include "gui/rosbag_inspector.h"
 #include "calibration/calibration_helper.h"
+#include "io/aprilgrid_container.h"
+#include "io/rosbag_container.h"
 
-#include <basalt/serialization/headers_serialization.h>
-#include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include "imports.h"
+#include "libcbdetect/boards_from_corners.h"
 
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <string>
 
 using namespace basalt;
 
 struct AppState {
-  // All other configs, can look at the field vars of VioDataset or RosbagIO to check, keep this struct empty
-  std::string file_path; // Only able to store one .bag file at a time
-  double file_size;
+  RosbagContainer rosbag_files;
+  int selected; // selected rosbag_file for display
+  AprilGridContainer aprilgrid_files;
+  std::map<std::string, uint64_t> num_topics_to_show; // for the rosbag inspector config
 
-  RosbagIO rosbag_io;
-//  std::map<std::string, std::vector<std::string>> topics_to_message_types;
-  //basalt::VioDatasetPtr &dataset; // Can access the rosbag file by pressing .bag here
-  std::vector<int64_t> image_timestamps;
-  // map from timestamp to cv::Mat
-  std::map<int64_t, std::vector<cv::Mat>> image_data; // Must be ready to plot
-  AprilGrid april_grid;
-  CalibCornerMap calib_corners;
-  CalibCornerMap calib_corners_rejected;
+  int selectedFrame;
 
-  std::map<std::string, std::vector<std::string>> topics_to_message_types;
   std::shared_ptr<std::thread> processing_thread;
 
+  ImmVision::ImageParams immvisionParams;
 
-  AppState(std::string april_grid_path) : april_grid(april_grid_path) {};
+  // Delete later, just for show
+  std::vector<float> frame_rates; // Doesn't need to be shared_ptr, since the app_state object will remain alive till end of the main function
 
-  void loadDataset(const std::filesystem::path &path) {
-    this->file_path = path.string();
-    this->rosbag_io.read(path);
+  AppState() {
+    spdlog::trace("Initializing AppState object");
+    this->selected = 0; // for the selected rosbag file
+    this->selectedFrame = 0;
+    immvisionParams = ImmVision::ImageParams();
+    immvisionParams.ImageDisplaySize = cv::Size(600, 0);
+    immvisionParams.ZoomKey = "z";
 
-    //this->dataset = this->rosbag_io.get_data(); // data is a private member of rosbag_io, so copy reference
-    // Replace dataset with rosbag_io.get_data() because shared_ptr
-
-    this->file_size = 1.0 * this->rosbag_io.get_data()->get_size() / (1024LL * 1024LL);
-
-    this->image_timestamps = this->rosbag_io.get_data()->get_image_timestamps();
-    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
-
-    this->feed_images();
-
-    // Load detected corners if cached
-    {
-      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/stuff_detected_corners.cereal";
-
-      std::ifstream is(path, std::ios::binary);
-
-      if (is.good()) {
-        cereal::BinaryInputArchive archive(is);
-
-        calib_corners.clear();
-        calib_corners_rejected.clear();
-        archive(calib_corners);
-        archive(calib_corners_rejected);
-
-        spdlog::info("Loaded detected corners from: {}", path);
-      } else {
-        spdlog::info("No pre-processed detected corners found");
-      }
+    // Delete later
+    for (int i = 0; i < 200; ++i) {
+      frame_rates.push_back(0.f);
     }
+  };
 
-    // Get the topics_to_message_types
-    {
-      rosbag::View entire_bag_view(*rosbag_io.get_data().get()->get_bag());
-
-      for (auto &&m: entire_bag_view) {
-        topics_to_message_types[m.getTopic()].push_back(m.getDataType());
-      }
+  ~AppState() {
+    spdlog::trace("Destroying AppState object and joining processing thread");
+    if (processing_thread) {
+      processing_thread->join();
     }
   }
 
-  void feed_images() {
-    for (int64_t t_ns: this->image_timestamps) {
-      std::vector<cv::Mat> cv_img_vec; // One vector for each timestamp
-      const std::vector<ImageData> &img_vec = this->rosbag_io.get_data()->get_image_data(t_ns);
+  void loadDataset(const std::string &path) {
+    // Check the string path to see if it is a rosbag or aprilgrid
+    if (path.find(".bag") != std::string::npos) {
+      spdlog::debug("Loading rosbag file: {}", path);
+      rosbag_files.addFiles(std::vector<std::string>{path});
+      spdlog::debug("Size of rosbag_files: {}", rosbag_files.size());
+    } else if (path.find(".json") != std::string::npos) {
+      aprilgrid_files.addFiles(std::vector<std::string>{path});
+      spdlog::debug("Size of aprilgrid_files: {}", aprilgrid_files.size());
+    } else {
+      std::cerr << "Unknown file type: " << path << std::endl;
+    }
+  }
 
-      for (size_t cam_id = 0; cam_id < this->rosbag_io.get_data()->get_num_cams(); cam_id++) {
-        const ManagedImage<uint16_t>::Ptr &managed_image_ptr = img_vec[cam_id].img;
+//  void feed_images() {
+//    // Basically get the image data, and construct the image_data field in the RosbagDataset object
+//    // image_data is std::map<int64_t, std::vector<cv::Mat>> image_data;
+//
+//    for (int64_t t_ns: this->image_timestamps) {
+//      std::vector<cv::Mat> cv_img_vec; // One vector for each timestamp
+//      const std::vector<ImageData> &img_vec = this->rosbag_io.get()->get_image_data(t_ns);
+//
+//      for (size_t cam_id = 0; cam_id < this->rosbag_io.get()->get_num_cams(); cam_id++) {
+//        const ManagedImage<uint16_t>::Ptr &managed_image_ptr = img_vec[cam_id].img;
+//
+//        // Check if the managed_image_ptr is valid
+//        if (managed_image_ptr) {
+//          // Extract the image properties from the managed_image_ptr
+//          size_t width = managed_image_ptr->w;
+//          size_t height = managed_image_ptr->h;
+//          size_t pitch_bytes = managed_image_ptr->pitch;
+//
+//          // Create a cv::Mat with the appropriate size and data type
+//          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
+//
+//          cv::Mat image_mat_8u;
+//          image_mat_16u.convertTo(image_mat_8u, CV_8U, 1.0 / 256.0);
+//
+//          cv_img_vec.push_back(image_mat_8u);
+//
+//          // Do something with the converted cv::Mat (e.g., perform image processing or display)
+//          // ...
+//
+//          // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
+//          // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
+//          // otherwise, the cv::Mat will contain invalid data.
+//        }
+//      }
+//
+//      this->image_data.insert({t_ns, cv_img_vec});
+//    }
+//
+//    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
+//  }
 
-        // Check if the managed_image_ptr is valid
-        if (managed_image_ptr) {
-          // Extract the image properties from the managed_image_ptr
-          size_t width = managed_image_ptr->w;
-          size_t height = managed_image_ptr->h;
-          size_t pitch_bytes = managed_image_ptr->pitch;
-
-          // Create a cv::Mat with the appropriate size and data type
-          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
-
-          cv::Mat image_mat_8u;
-          image_mat_16u.convertTo(image_mat_8u, CV_8U, 1.0 / 256.0);
-
-          cv_img_vec.push_back(image_mat_8u);
-
-          // Do something with the converted cv::Mat (e.g., perform image processing or display)
-          // ...
-
-          // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
-          // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
-          // otherwise, the cv::Mat will contain invalid data.
-        }
-      }
-
-      this->image_data.insert({t_ns, cv_img_vec});
+  void detectCorners() {
+    if (processing_thread) {
+      processing_thread->join();
+      processing_thread.reset();
     }
 
-    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
+    if (this->rosbag_files.size() == 0 || this->aprilgrid_files.size() == 0) {
+      spdlog::debug("No rosbag or aprilgrid files loaded");
+      return;
+    }
+
+    // Change this to not even reset the thread when there's cached corners.
+    processing_thread = std::make_shared<std::thread>([this]() {
+      spdlog::trace("Started detecting corners thread");
+
+      CalibHelper::detectCorners(this->rosbag_files[this->selected], this->aprilgrid_files[this->selected]);
+      spdlog::trace("Corner detection is done");
+    });
+  }
+
+  void drawCorners() {
+    if (processing_thread) {
+      processing_thread->join();
+      processing_thread.reset();
+    }
+
+    processing_thread = std::make_shared<std::thread>([this]() {
+      spdlog::trace("Started drawing corners");
+
+      for (auto ts: this->rosbag_files[this->selected]->get_image_timestamps()) {
+        spdlog::trace("Drawing corners for timestamp: {}", ts);
+        std::vector<cv::Mat> &img_vec = this->rosbag_files[this->selected]->image_data.at(ts);
+
+        for (int cam_num = 0; cam_num < this->rosbag_files[this->selected]->get_num_cams(); cam_num++) {
+          auto tcid = basalt::TimeCamId(ts, cam_num);
+          const CalibCornerData &cr = this->rosbag_files[this->selected]->calib_corners.at(tcid);
+          const CalibCornerData &cr_rej = this->rosbag_files[this->selected]->calib_corners_rejected.at(tcid);
+
+          for (size_t i = 0; i < cr.corners.size(); i++) {
+            // The radius is the threshold used for maximum displacement. The search region is slightly larger.
+            const float radius = static_cast<float>(cr.radii[i]);
+            const Eigen::Vector2d &c = cr.corners[i];
+
+            cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),
+                       cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+          }
+
+        }
+      }
+      spdlog::trace("Finished drawing corners");
+    });
   }
 
 
@@ -138,22 +177,22 @@ struct AppState {
     return img_color;
   }
 
-  void drawImageOverlay(cv::Mat image) {
-    int64_t timestamp_ns = rosbag_io.get_data()->get_image_timestamps()[0];
-    TimeCamId tcid(timestamp_ns, 0);
-
-    const CalibCornerData &cr = calib_corners.at(tcid);
-    const CalibCornerData &cr_rej = calib_corners_rejected.at(tcid);
-
-    for (size_t i = 0; i < cr.corners.size(); i++) {
-      // The radius is the threshold used for maximum displacement.
-      // The search region is slightly larger.
-      const float radius = static_cast<float>(cr.radii[i]);
-      const Eigen::Vector2d &c = cr.corners[i];
-
-      cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
-                 cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-
-    }
-  }
+//  void drawImageOverlay(cv::Mat image) {
+//    int64_t timestamp_ns = this->rosbag_io.get()->get_image_timestamps()[0];
+//    TimeCamId tcid(timestamp_ns, 0);
+//
+//    const CalibCornerData &cr = calib_corners.at(tcid);
+//    const CalibCornerData &cr_rej = calib_corners_rejected.at(tcid);
+//
+//    for (size_t i = 0; i < cr.corners.size(); i++) {
+//      // The radius is the threshold used for maximum displacement.
+//      // The search region is slightly larger.
+//      const float radius = static_cast<float>(cr.radii[i]);
+//      const Eigen::Vector2d &c = cr.corners[i];
+//
+//      cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
+//                 cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
+//
+//    }
+//  }
 };
