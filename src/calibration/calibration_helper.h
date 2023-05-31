@@ -2,65 +2,44 @@
 
 #include "calibration/aprilgrid.h"
 #include "io/dataset_io.h"
-#include "utils/common_types.h"
 
-#include <basalt/utils/apriltag.h>
-#include <basalt/calibration/calibration.hpp>
-#include <basalt/serialization/headers_serialization.h>
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 
 namespace basalt {
-  struct CalibCornerData {
-    Eigen::aligned_vector<Eigen::Vector2d> corners;
-    std::vector<int> corner_ids;
-    std::vector<double> radii;  //!< threshold used for maximum displacement
-    //! during sub-pix refinement; Search region is
-    size_t seq; // sequence in the dataset
-    //! slightly larger.
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  struct ProjectedCornerData {
-    Eigen::aligned_vector<Eigen::Vector2d> corners_proj;
-    std::vector<bool> corners_proj_success;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  struct CalibInitPoseData {
-    Sophus::SE3d T_a_c;
-    size_t num_inliers;
-
-    Eigen::aligned_vector<Eigen::Vector2d> reprojected_corners;
-
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  };
-
-  using CalibCornerMap = tbb::concurrent_unordered_map<TimeCamId, CalibCornerData,
-          std::hash<TimeCamId>>;
-
-  using CalibInitPoseMap =
-          tbb::concurrent_unordered_map<TimeCamId, CalibInitPoseData,
-                  std::hash<TimeCamId>>;
-
   class CalibHelper {
   public:
-    static void detectCorners(const basalt::VioDatasetPtr &vio_data, const basalt::AprilGrid &april_grid,
-                              basalt::CalibCornerMap &calib_corners,
-                              basalt::CalibCornerMap &calib_corners_rejected) {
-      spdlog::info("Started detecting corners");
+    static void detectCorners(const std::shared_ptr<RosbagDataset> &vio_data,
+                              const std::shared_ptr<basalt::AprilGrid> &april_grid) {
+      // Eventually, remove this to be not hard coded.
+      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/stuff_detected_corners.cereal";
 
-      calib_corners.clear();
-      calib_corners_rejected.clear();
+      std::ifstream is(path, std::ios::binary);
 
-      spdlog::info("Detecting corners with low ID = {}", april_grid.getLowId());
+      if (is.good()) {
+        cereal::BinaryInputArchive archive(is);
+
+        vio_data->calib_corners.clear();
+        vio_data->calib_corners_rejected.clear();
+        archive(vio_data->calib_corners);
+        archive(vio_data->calib_corners_rejected);
+
+        spdlog::info("Loaded detected corners from: {}", path);
+        return;
+      }
+
+      spdlog::info("No pre-processed detected corners found, started corner detection");
+
+      vio_data->calib_corners.clear();
+      vio_data->calib_corners_rejected.clear();
+
+      spdlog::debug("Detecting corners with low ID = {}", april_grid->getLowId());
 
       tbb::parallel_for(
               tbb::blocked_range<size_t>(0, vio_data->get_image_timestamps().size()),
               [&](const tbb::blocked_range<size_t> &r) {
-                const int numTags = april_grid.getTagCols() * april_grid.getTagRows();
+                const int numTags = april_grid->getTagCols() * april_grid->getTagRows();
                 ApriltagDetector ad(numTags);
 
                 for (size_t j = r.begin(); j != r.end(); ++j) {
@@ -82,22 +61,20 @@ namespace basalt {
 
                       TimeCamId tcid(timestamp_ns, i);
 
-                      calib_corners.emplace(tcid, ccd_good);
-                      calib_corners_rejected.emplace(tcid, ccd_bad);
+//                      calib_corners.emplace(tcid, ccd_good);
+                      vio_data->calib_corners_rejected.emplace(tcid, ccd_bad);
                     }
                   }
                 }
               });
 
-      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/stuff_detected_corners.cereal";
       std::ofstream os(path, std::ios::binary);
       cereal::BinaryOutputArchive archive(os);
 
-      archive(calib_corners);
-      archive(calib_corners_rejected);
+      archive(vio_data->calib_corners);
+      archive(vio_data->calib_corners_rejected);
 
-      std::cout << "Done detecting corners. Saved them here: " << path
-                << std::endl;
+      spdlog::info("Done detecting corners. Saved them here: {}", path);
     }
 
     static void initCamPoses(

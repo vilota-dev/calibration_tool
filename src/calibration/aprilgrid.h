@@ -8,6 +8,7 @@
 namespace basalt {
   struct AprilGrid {
     AprilGrid(const std::string &config_path) {
+      this->file_path = config_path;
       std::ifstream is(config_path);
       if (is.is_open()) {
         cereal::JSONInputArchive ar(is);
@@ -111,6 +112,8 @@ namespace basalt {
     Eigen::aligned_vector<Eigen::Vector4d> aprilgrid_corner_pos_3d;
     Eigen::aligned_vector<Eigen::Vector4d> aprilgrid_vignette_pos_3d;
 
+    inline const std::string &get_file_path() const { return file_path; }
+
     inline int getTagCols() const { return tagCols; }
 
     inline int getTagRows() const { return tagRows; }
@@ -118,11 +121,14 @@ namespace basalt {
     inline int getLowId() const { return lowId; }
 
   private:
+    std::string file_path;
     int tagCols;        // number of apriltags
     int tagRows;        // number of apriltags
     double tagSize;     // size of apriltag, edge to edge [m]
     double tagSpacing;  // ratio of space between tags to tagSize
     double lowId = 25;
   };
+
+  typedef std::shared_ptr<AprilGrid> AprilGridPtr;
 
 }  // namespace basalt
