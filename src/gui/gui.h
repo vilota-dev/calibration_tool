@@ -1,19 +1,20 @@
 #pragma once
 
 #include "io/dataset_io.h"
-#include "gui/rosbag_inspector.h"
-
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
-#include "implot.h"
-#include "immvision.h"
-#include <glad/glad.h> // Initialize with gladLoadGL()
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include "io/files_container.h"
+#include "gui/widgets/rosbag_inspector.h"
+#include "gui/widgets/plot_error.h"
+#include "gui/widgets/img_display.h"
+#include "gui/widgets/checkerboard_config.h"
+#include "libcbdetect/boards_from_corners.h"
+#include "libcbdetect/config.h"
+#include "libcbdetect/find_corners.h"
+#include "libcbdetect/plot_boards.h"
+#include "libcbdetect/plot_corners.h"
+#include <chrono>
 #include <opencv2/opencv.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
+#include <vector>
+
 #include "spdlog/spdlog.h"
 #include <nfd.h>
 
@@ -26,7 +27,7 @@
 #include <GLES2/gl2.h>
 #endif
 
-void config_gui() {
+void config_gui(AppState &app_state) {
   ImGui::Begin("Calibration GUI");
 
   // Make a slider for a slider for the frame
@@ -45,45 +46,60 @@ void config_gui() {
 
   if (ImGui::Button("Load Dataset")) {
     spdlog::info("Loading dataset");
-    // Insert the NFDE stuff here
+    // Run the CalibHelper::
   }
 
   if (ImGui::Button("Detect Corners")) {
-    spdlog::info("Starting corner detection");
-    // Insert the NFDE stuff here
+    spdlog::trace("Starting corner detection");
+    app_state.detectCorners();
+  }
+
+  if (ImGui::Button("Draw Corners")) {
+    spdlog::trace("Starting corner drawing");
+    app_state.drawCorners();
   }
 
   if (ImGui::Button("Optimize")) {
     spdlog::info("Starting calibration");
     // Optimize function
   }
-
   ImGui::End();
-
 }
 
-void draw_main_menu_bar(AppState &data) {
+void draw_main_menu_bar(AppState &app_state) {
   static nfdchar_t *outPath;
-  static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
 
   ImGui::BeginMainMenuBar();
   if (ImGui::BeginMenu("File")) {
-    if (ImGui::MenuItem("Load .bag file")) {
-      nfdresult_t result = NFD_OpenDialog(&outPath, filterItem, 1, NULL);
+    if (ImGui::MenuItem("Load ROS .bag file")) {
+      static nfdfilteritem_t bagFilter[1] = {{"ROS .bag file", "bag"}}; // support for png later
+      nfdresult_t result = NFD_OpenDialog(&outPath, bagFilter, 1, NULL);
       if (result == NFD_OKAY) {
-        spdlog::info("Success!");
-        spdlog::info("File is located here: {}", outPath);
-        data.loadDataset(outPath);
+        app_state.loadDataset(outPath);
+        spdlog::debug("Success! File loaded from {}", outPath);
         NFD_FreePath(outPath);
       } else if (result == NFD_CANCEL) {
-        spdlog::info("User pressed cancel.");
+        spdlog::debug("User pressed cancel.");
+      } else {
+        spdlog::error("Error: {}", NFD_GetError());
+      }
+    }
+
+    if (ImGui::MenuItem("Load AprilGrid .json file")) {
+      static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
+      nfdresult_t result = NFD_OpenDialog(&outPath, aprilgridFilter, 1, NULL);
+      if (result == NFD_OKAY) {
+        spdlog::debug("Success! File loaded from {}", outPath);
+        app_state.loadDataset(outPath);
+        NFD_FreePath(outPath);
+      } else if (result == NFD_CANCEL) {
+        spdlog::debug("User pressed cancel.");
       } else {
         spdlog::error("Error: {}", NFD_GetError());
       }
     }
     ImGui::EndMenu();
   }
-
   ImGui::EndMainMenuBar();
 }
 
@@ -92,41 +108,8 @@ static void glfw_error_callback(int error, const char *description) {
 }
 
 void run_gui() {
-  spdlog::info("Starting GUI");
-
-  AppState app_state("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/aprilgrid_6x6_15.5percent.json");
-  app_state.loadDataset("/Users/tejas/Developer/vilota-dev/calibration_tool/data/2023-04-21/run1/2023-04-21-vk180-calib-run1.bag");
-
-  // Check if calib corners is empty
-  if (app_state.calib_corners.empty()) {
-    spdlog::info("Calib corners is empty, starting corner detection");
-    CalibHelper::detectCorners(app_state.rosbag_io.get_data(), app_state.april_grid, app_state.calib_corners, app_state.calib_corners_rejected);
-  } else {
-    spdlog::info("Cache file found, skipping corner detection");
-  }
-
-  const std::vector<basalt::ImageData> &img_vec = app_state.rosbag_io.get_data()->get_image_data(633071364884620);
-  cv::Mat image = app_state.convert(img_vec[0].img);
-  int64_t timestamp_ns = app_state.rosbag_io.get_data()->get_image_timestamps()[0];
-  TimeCamId tcid(633071364884620, 0);
-
-  const CalibCornerData &cr = app_state.calib_corners.at(tcid);
-  const CalibCornerData &cr_rej = app_state.calib_corners_rejected.at(tcid);
-
-  for (size_t i = 0; i < cr.corners.size(); i++) {
-    // The radius is the threshold used for maximum displacement.
-    // The search region is slightly larger.
-    const float radius = static_cast<float>(cr.radii[i]);
-    const Eigen::Vector2d& c = cr.corners[i];
-
-    cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
-               cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-  }
-
-  // Initialize Native file dialog
+  AppState app_state;
   NFD_Init();
-  nfdchar_t *outPath;
-  nfdresult_t result;
 
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) {
@@ -166,6 +149,8 @@ void run_gui() {
   }
   glfwMakeContextCurrent(window);
   glfwSwapInterval(1); // Enable vsync
+  // https://github.com/IntelRealSense/librealsense/blob/b874e42685aed1269bc57a2fe5bf14946deb6ede/tools/rosbag-inspector/rs-rosbag-inspector.cpp#L89
+  // for drag n drop upload files
 
   // Load Glad
   if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
@@ -176,6 +161,7 @@ void run_gui() {
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
+  ImPlot::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
   (void) io;
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
@@ -212,30 +198,16 @@ void run_gui() {
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
-    // For Dockspace stuff
-    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
-
-    // Show Demo window
-    ImGui::ShowDemoWindow(&show_demo_window);
-
-    config_gui();
+    ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // Make main window into dockspace
 
     draw_main_menu_bar(app_state);
-
+//    plot_mean_error(app_state.frame_rates);
+    config_gui(app_state);
     draw_rosbag_inspector(app_state);
-
-    if (ImGui::Begin("Image Display")) {
-
-      ImmVision::ImageDisplay("Fk", image); //img_vec[0].img.get()
-      ImmVision::ImageDisplay("Fk2", app_state.convert(img_vec[0].img)); //img_vec[0].img.get()
-      ImmVision::ImageDisplay("Fk3", app_state.convert(img_vec[2].img)); //img_vec[0].img.get()
-
-//      ImmVision::ImageDisplay("Cat", app_state.image_data.at(app_state.image_timestamps[1])[0]);
-//      ImmVision::ImageDisplay("Dog", app_state.image_data.at(app_state.image_timestamps[2])[1]);
-//      ImmVision::ImageDisplay("Pig", app_state.image_data.at(app_state.image_timestamps[3])[2]);
+    if (app_state.rosbag_files.size() > 0) {
+//      draw_calibration_settings(app_state);
+      img_display(app_state.immvisionParams, app_state);
     }
-    ImGui::End();
 
     // Rendering
     ImGui::Render();
@@ -263,6 +235,7 @@ void run_gui() {
   // Cleanup
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
   NFD_Quit();
 
