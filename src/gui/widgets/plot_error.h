@@ -5,7 +5,7 @@ void plot_mean_error(std::vector<float> &frame_rates) {
   frame_rates.erase(frame_rates.begin());
   frame_rates.push_back(1.f / ImGui::GetIO().DeltaTime);
 
-  if (!ImGui::Begin("Long running task")) {
+  if (!ImGui::Begin("Frame Rate")) {
     // Early out if the window is collapsed, as an optimization.
     ImGui::End();
     return;
@@ -13,7 +13,7 @@ void plot_mean_error(std::vector<float> &frame_rates) {
 
   if (ImPlot::BeginSubplots("", 1, 1, ImVec2(1200, 800))) {
     if (ImPlot::BeginPlot("")) {
-      ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 5.f);
+      ImPlot::PushStyleVar(ImPlotStyleVar_LineWeight, 1.f);
 
       ImPlot::SetupAxis(ImAxis_X1, "Frame Number", ImPlotAxisFlags_AutoFit);
       ImPlot::SetupAxis(ImAxis_Y1, "Frame Rate");
