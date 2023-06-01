@@ -35,20 +35,17 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
+#ifndef LIBCBDETECT_INIT_BOARD_H
+#define LIBCBDETECT_INIT_BOARD_H
 
 #include <vector>
-
-#include <opencv2/opencv.hpp>
 
 #include "libcbdetect/config.h"
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL bool init_board(const Corner& corners, std::vector<int>& used, Board& board, int idx);
 
 }
 
-#endif //CALIBRATION_FIND_CORNERS_H
+#endif //LIBCBDETECT_INIT_BOARD_H

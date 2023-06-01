@@ -35,9 +35,10 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
+#ifndef LIBCBDETECT_WEIGHT_MASK
+#define LIBCBDETECT_WEIGHT_MASK
 
+#include <unordered_map>
 #include <vector>
 
 #include <opencv2/opencv.hpp>
@@ -46,9 +47,8 @@
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL std::unordered_map<int, cv::Mat> weight_mask(const std::vector<int>& radius);
 
 }
 
-#endif //CALIBRATION_FIND_CORNERS_H
+#endif //LIBCBDETECT_WEIGHT_MASK

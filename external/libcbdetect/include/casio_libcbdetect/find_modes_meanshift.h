@@ -35,20 +35,18 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
+#ifndef LIBCBDETECT_FIND_MODES_MEANSHIFT_H
+#define LIBCBDETECT_FIND_MODES_MEANSHIFT_H
 
 #include <vector>
-
-#include <opencv2/opencv.hpp>
 
 #include "libcbdetect/config.h"
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL std::vector<std::pair<int, double>> find_modes_meanshift(const std::vector<double>& hist,
+                                                                              double sigma);
 
 }
 
-#endif //CALIBRATION_FIND_CORNERS_H
+#endif //LIBCBDETECT_FIND_MODES_MEANSHIFT_H

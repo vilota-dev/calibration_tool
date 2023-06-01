@@ -35,20 +35,21 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
-
-#include <vector>
+#ifndef LIBCBDETECT_NON_MAXIMUM_SUPPRESSION_H
+#define LIBCBDETECT_NON_MAXIMUM_SUPPRESSION_H
 
 #include <opencv2/opencv.hpp>
 
 #include "libcbdetect/config.h"
+#include "libcbdetect/find_corners.h"
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL void non_maximum_suppression(const cv::Mat& img, int n, double tau, int margin, Corner& corners);
 
-}
+LIBCBDETECT_DLL_DECL void non_maximum_suppression_sparse(Corner& corners, int n, cv::Size img_size,
+                                                         const Params& params);
 
-#endif //CALIBRATION_FIND_CORNERS_H
+} // namespace cbdetect
+
+#endif //LIBCBDETECT_NON_MAXIMUM_SUPPRESSION_H

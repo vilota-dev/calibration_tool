@@ -35,8 +35,6 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
 
 #include <vector>
 
@@ -46,9 +44,6 @@
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
-
+extern "C" __attribute__((visibility("default"))) void boards_from_corners(const cv::Mat& img, const Corner& corners,
+                                              std::vector<Board>& boards, const Params& params); 
 }
-
-#endif //CALIBRATION_FIND_CORNERS_H

@@ -35,10 +35,8 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
-
-#include <vector>
+#ifndef LIBCBDETECT_PLOT_CORNERS_H
+#define LIBCBDETECT_PLOT_CORNERS_H
 
 #include <opencv2/opencv.hpp>
 
@@ -46,9 +44,10 @@
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL void plot_corners(const cv::Mat& img, const std::vector<cv::Point2d>& corners, const char* str);
 
-}
+LIBCBDETECT_DLL_DECL void plot_corners(const cv::Mat& img, const Corner& corners);
 
-#endif //CALIBRATION_FIND_CORNERS_H
+} // namespace cbdetect
+
+#endif //LIBCBDETECT_PLOT_CORNERS_H

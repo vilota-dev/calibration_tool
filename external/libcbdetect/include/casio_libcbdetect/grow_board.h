@@ -35,20 +35,24 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
+#ifndef LIBCBDETECT_GROW_BOARD_H
+#define LIBCBDETECT_GROW_BOARD_H
 
 #include <vector>
-
-#include <opencv2/opencv.hpp>
 
 #include "libcbdetect/config.h"
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+enum GrowType {
+  GrowType_Failure = 0,
+  GrowType_Inside,
+  GrowType_Boundary,
+};
 
-}
+LIBCBDETECT_DLL_DECL GrowType grow_board(const Corner& corners, std::vector<int>& used, Board& board,
+                                         std::vector<cv::Point2i>& proposal, int direction, const Params& params);
 
-#endif //CALIBRATION_FIND_CORNERS_H
+} // namespace cbdetect
+
+#endif //LIBCBDETECT_GROW_BOARD_H

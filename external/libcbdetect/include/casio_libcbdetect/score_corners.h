@@ -35,20 +35,23 @@
 */
 
 #pragma once
-#ifndef LIBCBDETECT_FIND_CORNERS_H
-#define LIBCBDETECT_FIND_CORNERS_H
+#ifndef LIBCBDETECT_SCORE_CORNERS_H
+#define LIBCBDETECT_SCORE_CORNERS_H
 
 #include <vector>
 
 #include <opencv2/opencv.hpp>
 
 #include "libcbdetect/config.h"
+#include "libcbdetect/find_corners.h"
 
 namespace cbdetect {
 
-LIBCBDETECT_DLL_DECL void find_corners(const cv::Mat& img, Corner& corners,
-                                       const Params& params = Params());
+LIBCBDETECT_DLL_DECL void sorce_corners(const cv::Mat& img, const cv::Mat& img_weight,
+                                        Corner& corners, const Params& params);
 
-}
+LIBCBDETECT_DLL_DECL void remove_low_scoring_corners(double tau, Corner& corners, const Params& params);
 
-#endif //CALIBRATION_FIND_CORNERS_H
+} // namespace cbdetect
+
+#endif //LIBCBDETECT_SCORE_CORNERS_H
