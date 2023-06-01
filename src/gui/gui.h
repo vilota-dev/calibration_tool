@@ -1,7 +1,6 @@
 #pragma once
 
 #include "io/dataset_io.h"
-#include "io/files_container.h"
 #include "gui/widgets/rosbag_inspector.h"
 #include "gui/widgets/plot_error.h"
 #include "gui/widgets/img_display.h"
@@ -52,6 +51,16 @@ void config_gui(AppState &app_state) {
   if (ImGui::Button("Detect Corners")) {
     spdlog::trace("Starting corner detection");
     app_state.detectCorners();
+  }
+
+  if (ImGui::Button("Detect Checkerboard Corners")) {
+    spdlog::trace("Starting checkerboard corner detection");
+    app_state.detectCheckerboardCorners();
+  }
+
+  if (ImGui::Button("Draw Checkerboard")) {
+    spdlog::trace("Starting checkerboard drawing");
+    app_state.drawCheckerboardCorners();
   }
 
   if (ImGui::Button("Draw Corners")) {
@@ -204,6 +213,7 @@ void run_gui() {
 //    plot_mean_error(app_state.frame_rates);
     config_gui(app_state);
     draw_rosbag_inspector(app_state);
+    draw_checkerboard_config(app_state.checkerboard_params);
     if (app_state.rosbag_files.size() > 0) {
 //      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);
