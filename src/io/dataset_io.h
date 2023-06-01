@@ -2,6 +2,7 @@
 
 #include "utils/filesystem.h"
 #include "calibration/calibration_data.h"
+#include "libcbdetect/config.h"
 
 #include <basalt/camera/generic_camera.hpp>
 #include <basalt/camera/stereographic_param.hpp>
@@ -190,6 +191,9 @@ namespace basalt {
     // doesn't matter.
     CalibCornerMap calib_corners;
     CalibCornerMap calib_corners_rejected;
+
+    // For checkerboard
+    CheckerboardCornerMap checkerboard_corners; // Eventually merge the two corner types, ez serialisation
 
     std::map<int64_t, std::vector<cv::Mat>> image_data; // corners will be drawn into memory for now
 
