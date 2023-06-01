@@ -3,6 +3,7 @@
 #include <basalt/serialization/headers_serialization.h>
 #include <tbb/concurrent_unordered_map.h>
 #include "utils/common_types.h"
+#include "libcbdetect/config.h"
 
 // Store the structs relevant to calibration data in this file.
 namespace basalt {
@@ -33,6 +34,9 @@ namespace basalt {
   };
 
   using CalibCornerMap = tbb::concurrent_unordered_map<TimeCamId, CalibCornerData,
+  std::hash<TimeCamId>>;
+
+  using CheckerboardCornerMap = tbb::concurrent_unordered_map<TimeCamId, cbdetect::Corner,
   std::hash<TimeCamId>>;
 
   using CalibInitPoseMap =
