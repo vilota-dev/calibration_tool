@@ -154,14 +154,6 @@ struct AppState {
 
   }
 
-  void debugCheckerboard() {
-    auto ts = this->rosbag_files[this->selected]->get_image_timestamps()[0];
-    auto img_to_display = this->rosbag_files[this->selected]->image_data.at(ts)[0]; // hard to cam 0 for now
-    auto corners = this->rosbag_files[this->selected]->checkerboard_corners.at(basalt::TimeCamId(ts, 0));
-
-//    cbdetect::plot_corners(img_to_display, corners);
-  }
-
   void drawCorners() {
     if (processing_thread) {
       processing_thread->join();
@@ -178,7 +170,7 @@ struct AppState {
         for (int cam_num = 0; cam_num < this->rosbag_files[this->selected]->get_num_cams(); cam_num++) {
           auto tcid = basalt::TimeCamId(ts, cam_num);
           const CalibCornerData &cr = this->rosbag_files[this->selected]->calib_corners.at(tcid);
-          const CalibCornerData &cr_rej = this->rosbag_files[this->selected]->calib_corners_rejected.at(tcid);
+//          const CalibCornerData &cr_rej = this->rosbag_files[this->selected]->calib_corners_rejected.at(tcid);
 
           for (size_t i = 0; i < cr.corners.size(); i++) {
             // The radius is the threshold used for maximum displacement. The search region is slightly larger.
@@ -196,6 +188,10 @@ struct AppState {
   }
 
   void drawCheckerboardCorners() {
+    /*
+     * https://github.com/pthom/immvision/blob/df657767f08303438c8450e620bf406967cd1dad/src/immvision/internal/drawing/image_drawing.cpp#L23
+     * Draw the circles the same way the watched pixels are drawn in immvision.
+     * */
     if (processing_thread) {
       processing_thread->join();
       processing_thread.reset();
