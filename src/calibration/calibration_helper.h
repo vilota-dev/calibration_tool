@@ -21,7 +21,7 @@ namespace basalt {
     static void detectCorners(const std::shared_ptr<RosbagDataset> &vio_data,
                               const std::shared_ptr<basalt::AprilGrid> &april_grid) {
       // Eventually, remove this to be not hard coded.
-      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/stuff_detected_corners.cereal";
+      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/test_stuff_detected_corners.cereal";
 
       std::ifstream is(path, std::ios::binary);
 
@@ -69,7 +69,10 @@ namespace basalt {
 
                       TimeCamId tcid(timestamp_ns, i);
 
-//                      calib_corners.emplace(tcid, ccd_good);
+                      ccd_good.seq = j;
+                      ccd_bad.seq = j;
+
+                      vio_data->calib_corners.emplace(tcid, ccd_good);
                       vio_data->calib_corners_rejected.emplace(tcid, ccd_bad);
                     }
                   }
@@ -88,61 +91,52 @@ namespace basalt {
     // Added code for checkerboard detection
     static void detectCheckerboardCorners(const std::shared_ptr<RosbagDataset> &vio_data,
                                           cbdetect::Params &params) {
-//      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/checkerboard_detected_corners.cereal";
-//
-//      std::ifstream is(path, std::ios::binary);
-//
-//      if (is.good()) {
-//        cereal::BinaryInputArchive archive(is);
-//
-//        vio_data->checkerboard_corners.clear();
-////        archive(vio_data->checkerboard_corners);
-//
-//        spdlog::info("Loaded detected corners from: {}", path);
-//        return;
-//      }
-//
+      std::string path = "/Users/tejas/Developer/vilota-dev/calibration_tool/data/checkerboard_detected_corners.cereal";
+
+      std::ifstream is(path, std::ios::binary);
+
+      if (is.good()) {
+        cereal::BinaryInputArchive archive(is);
+
+        vio_data->calib_corners.clear();
+        vio_data->calib_corners_rejected.clear();
+        archive(vio_data->calib_corners);
+        archive(vio_data->calib_corners_rejected);
+
+        spdlog::info("Loaded detected corners from: {}", path);
+        return;
+      }
+
       spdlog::info("No pre-processed detected corners found, started corner detection");
 
       vio_data->checkerboard_corners.clear();
-//      for (size_t j = 0; j < vio_data->get_image_timestamps().size(); ++j) {
-//      for (size_t j = 0; j < 1; ++j) {
-//        int64_t timestamp_ns = vio_data->get_image_timestamps()[j];
-//        const std::vector<cv::Mat> &img_vec = vio_data->image_data.at(timestamp_ns);
-//
-//        for (size_t i = 0; i < img_vec.size(); i++) {
-//          spdlog::trace("trying detection for timestamp: {}", timestamp_ns);
-//          cbdetect::Corner corners; // will be populated for this image
-//          try {
-//            cbdetect::find_corners(img_vec[i], corners, params);
-//            TimeCamId tcid(timestamp_ns, i);
-//            vio_data->checkerboard_corners.emplace(tcid, corners);
-//            spdlog::trace("detected for timestamp: {}", timestamp_ns);
-//          } catch (const std::exception &e) {
-//            spdlog::error("Exception: {}", e.what());
-//          }
-//        }
-//      }
-// Parallelized code segfaults for some reason, can't seem to pinpoint, but seems like its from within find_corners
+
+      // Basically edit this for loop, to emplace back into the calib_corners instead
       tbb::parallel_for(
               tbb::blocked_range<size_t>(0, vio_data->get_image_timestamps().size()),
               [&](const tbb::blocked_range<size_t> &r) {
                 for (size_t j = r.begin(); j != r.end(); ++j) {
                   int64_t timestamp_ns = vio_data->get_image_timestamps()[j];
                   const std::vector<cv::Mat> &img_vec = vio_data->image_data.at(timestamp_ns);
-                  // Instead of getting cv::Mat, we do the conversion here to cv::Mat instead
 
                   for (size_t i = 0; i < img_vec.size(); i++) {
                     cbdetect::Corner corners; // will be populated for this image
                     cbdetect::find_corners(img_vec[i], corners, params);
                     TimeCamId tcid(timestamp_ns, i);
+                    vio_data->calib_corners.emplace(tcid, CalibCornerData(corners, j));
                     vio_data->checkerboard_corners.emplace(tcid, corners);
                     spdlog::trace("detected for timestamp: {}", timestamp_ns);
 
                   }
                 }
               });
-      spdlog::info("Done detecting checkerboard corners");
+      std::ofstream os(path, std::ios::binary);
+      cereal::BinaryOutputArchive archive(os);
+
+      archive(vio_data->calib_corners);
+//      archive(vio_data->checkerboard_corners);
+
+      spdlog::info("Done detecting corners. Saved them here: {}", path);
     }
 
     static void initCamPoses(

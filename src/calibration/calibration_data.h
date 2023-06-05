@@ -15,6 +15,22 @@ namespace basalt {
     size_t seq; // sequence in the dataset
     //! slightly larger.
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    CalibCornerData() = default;
+
+    CalibCornerData(const cbdetect::Corner &checkerboard_corner, size_t seq) : seq(seq) {
+      for (const auto &corner : checkerboard_corner.p) {
+        corners.emplace_back(corner.x, corner.y);
+      }
+      // corner_ids = checkerboard_corner.ids; /* Leave it empty and get IDs through loop index*/
+      for (const auto &radius : checkerboard_corner.r) {
+        radii.push_back(radius);
+      }
+      // Lose the other fields
+      // std::vector<cv::Point2d> v1;
+      //  std::vector<cv::Point2d> v2;
+      //  std::vector<cv::Point2d> v3;
+      //  std::vector<double> score;
+    }
   };
 
   struct ProjectedCornerData {
@@ -42,4 +58,16 @@ namespace basalt {
   using CalibInitPoseMap =
           tbb::concurrent_unordered_map<TimeCamId, CalibInitPoseData,
           std::hash<TimeCamId>>;
+}
+
+namespace cereal {
+  template<class Archive, class T>
+  void save(Archive& ar, const cv::Point_<T>& point) {
+    ar << point.x << point.y;
+  }
+
+  template<class Archive, class T>
+  void load(Archive& ar, cv::Point_<T>& point) {
+    ar >> point.x >> point.y;
+  }
 }
