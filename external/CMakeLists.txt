@@ -57,6 +57,7 @@ target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/Sophus"
         "${CMAKE_CURRENT_SOURCE_DIR}/ros"
         "${OpenCV_INCLUDE_DIRS}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
         )
 
 target_link_libraries(non_gui INTERFACE
@@ -65,4 +66,5 @@ target_link_libraries(non_gui INTERFACE
         nfd
         Sophus::Sophus
         rosbag
+        "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/lib/libcbdetect.dylib"
         )
