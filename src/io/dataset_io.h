@@ -49,22 +49,22 @@
 #include <functional>
 
 namespace basalt {
-  cv::Mat convert(ManagedImage<uint16_t>::Ptr img) {
-    // Create a cv::Mat with the appropriate size and data type
-    cv::Mat image_mat_16u(img->h, img->w, CV_16U, img->ptr, img->pitch);
-
-    // Convert the 16-bit image to 8-bit
-    cv::Mat img_8u;
-    image_mat_16u.convertTo(img_8u, CV_8U, 1.0 / 256.0);
-
-    // Create a 3-channel color image
-    cv::Mat img_color(img_8u.size(), CV_8UC3);
-
-    // Copy the grayscale image to all three color channels
-    cv::cvtColor(img_8u, img_color, cv::COLOR_GRAY2BGR);
-
-    return img_color;
-  }
+//  cv::Mat convert(ManagedImage<uint16_t>::Ptr img) {
+//    // Create a cv::Mat with the appropriate size and data type
+//    cv::Mat image_mat_16u(img->h, img->w, CV_16U, img->ptr, img->pitch);
+//
+//    // Convert the 16-bit image to 8-bit
+//    cv::Mat img_8u;
+//    image_mat_16u.convertTo(img_8u, CV_8U, 1.0 / 256.0);
+//
+//    // Create a 3-channel color image
+//    cv::Mat img_color(img_8u.size(), CV_8UC3);
+//
+//    // Copy the grayscale image to all three color channels
+//    cv::cvtColor(img_8u, img_color, cv::COLOR_GRAY2BGR);
+//
+//    return img_color;
+//  }
 
   struct ImageData {
     ImageData() : exposure(0) {}
@@ -440,8 +440,19 @@ namespace basalt {
 
         // Convert the images to cv::Mat
         for (auto & i : raw_data) {
-          auto temp = convert(i.img);
-          converted_images.push_back(temp);
+          cv::Mat image_mat_16u(i.img->h, i.img->w, CV_16U, i.img->ptr, i.img->pitch);
+
+          // Convert the 16-bit image to 8-bit
+          cv::Mat img_8u;
+          image_mat_16u.convertTo(img_8u, CV_8U, 1.0 / 256.0);
+
+          // Create a 3-channel color image
+          cv::Mat img_color(img_8u.size(), CV_8UC3);
+
+          // Copy the grayscale image to all three color channels
+          cv::cvtColor(img_8u, img_color, cv::COLOR_GRAY2BGR);
+
+          converted_images.push_back(img_color);
         }
 
         // Put the converted images in the map
