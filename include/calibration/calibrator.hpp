@@ -1,6 +1,5 @@
 #pragma once
 
-#include "calibration/aprilgrid.h"
 #include "io/dataset_io.h"
 #include "libcbdetect/config.h"
 #include "libcbdetect/find_corners.h"
@@ -18,47 +17,6 @@
 namespace fs = std::filesystem;
 
 namespace basalt {
-  class CalibParams {
-  public:
-    virtual ~CalibParams() = default;
-
-    /*
-     * process method will be called in the detectCorners loop for each ManagedImage.
-     * AprilGrid detection right now takes in a Managed image, but preferably we can make the tag detector take in
-     * cv::Mat instead, since we have preprocessed the cv::Mat.
-     * Checkboard corner detection takes in cv::Mat, so currently it's converting to a cv::Mat before passing the
-     * image to the find_corners function.
-     * */
-    virtual void
-    process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) = 0;
-  };
-
-  class AprilGridParams : public CalibParams {
-  public:
-    AprilGridParams(const std::shared_ptr<AprilGrid> &april_grid) : ad(
-            april_grid->getTagCols() * april_grid->getTagRows()) {
-      this->april_grid = april_grid;
-    }
-
-    void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
-
-  private:
-    std::shared_ptr<AprilGrid> april_grid;
-    ApriltagDetector ad;
-  };
-
-  class CheckerboardParams : public CalibParams {
-  public:
-    CheckerboardParams(const std::shared_ptr<cbdetect::Params> &cb_params) {
-      this->cb_params = cb_params;
-    }
-
-    void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
-
-  protected:
-    std::shared_ptr<cbdetect::Params> cb_params;
-  };
-
   class Calibrator {
   public:
     Calibrator(const std::shared_ptr<RosbagDataset> &dataset);

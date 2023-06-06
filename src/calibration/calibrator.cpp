@@ -1,4 +1,4 @@
-#include "calibration/calibration_helper.h"
+#include "calibration/calibrator.hpp"
 
 namespace basalt {
   void AprilGridParams::process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) {

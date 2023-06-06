@@ -1,6 +1,6 @@
 #pragma once
 
-#include "calibration/calibration_helper.h"
+#include "calibration/calibrator.hpp"
 #include "io/aprilgrid_container.h"
 #include "io/rosbag_container.h"
 

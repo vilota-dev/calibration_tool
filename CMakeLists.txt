@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/
 add_subdirectory("external")
 
 # Add source files
-set(SOURCES src/main.cpp src/calibration/calibration_helper.cpp)
+set(SOURCES src/main.cpp src/calibration/calibrator.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${SOURCES})

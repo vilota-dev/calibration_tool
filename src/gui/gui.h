@@ -29,10 +29,6 @@
 void config_gui(AppState &app_state) {
   ImGui::Begin("Calibration GUI");
 
-  // Make a slider for a slider for the frame
-  static int frame_slider = 0;
-  ImGui::SliderInt("Frame", &frame_slider, 0, 100);
-
   static bool show_corners = false;
   ImGui::Checkbox("Show corners", &show_corners);
 
