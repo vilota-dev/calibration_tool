@@ -1,3 +1,5 @@
+#pragma once
+
 #include <basalt/utils/apriltag.h>
 #include <basalt/calibration/calibration.hpp>
 #include <basalt/serialization/headers_serialization.h>
@@ -5,8 +7,12 @@
 #include "utils/common_types.h"
 #include "libcbdetect/config.h"
 
-// Store the structs relevant to calibration data in this file.
 namespace basalt {
+  enum class CalibType {
+    Checkerboard,
+    AprilGrid
+  };
+
   struct CalibCornerData {
     Eigen::aligned_vector<Eigen::Vector2d> corners;
     std::vector<int> corner_ids;
@@ -17,7 +23,7 @@ namespace basalt {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     CalibCornerData() = default;
 
-    CalibCornerData(const cbdetect::Corner &checkerboard_corner, size_t seq) : seq(seq) {
+    CalibCornerData(const cbdetect::Corner &checkerboard_corner) {
       for (const auto &corner : checkerboard_corner.p) {
         corners.emplace_back(corner.x, corner.y);
       }
@@ -50,24 +56,24 @@ namespace basalt {
   };
 
   using CalibCornerMap = tbb::concurrent_unordered_map<TimeCamId, CalibCornerData,
-  std::hash<TimeCamId>>;
+          std::hash<TimeCamId>>;
 
   using CheckerboardCornerMap = tbb::concurrent_unordered_map<TimeCamId, cbdetect::Corner,
-  std::hash<TimeCamId>>;
+          std::hash<TimeCamId>>;
 
   using CalibInitPoseMap =
           tbb::concurrent_unordered_map<TimeCamId, CalibInitPoseData,
-          std::hash<TimeCamId>>;
+                  std::hash<TimeCamId>>;
 }
 
 namespace cereal {
-  template<class Archive, class T>
-  void save(Archive& ar, const cv::Point_<T>& point) {
-    ar << point.x << point.y;
+  template<class Archive>
+  void serialize(Archive &ar, basalt::CalibCornerData &c) {
+    ar(c.corners, c.corner_ids, c.radii, c.seq);
   }
 
-  template<class Archive, class T>
-  void load(Archive& ar, cv::Point_<T>& point) {
-    ar >> point.x >> point.y;
+  template<class Archive>
+  void serialize(Archive &ar, basalt::CalibInitPoseData &c) {
+    ar(c.T_a_c, c.num_inliers, c.reprojected_corners);
   }
-}
+}  // namespace cereal
