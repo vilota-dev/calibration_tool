@@ -213,7 +213,7 @@ void run_gui() {
 //    plot_mean_error(app_state.frame_rates);
     config_gui(app_state);
     draw_rosbag_inspector(app_state);
-    draw_checkerboard_config(app_state.checkerboard_params);
+    draw_checkerboard_config(app_state, app_state.checkerboard_params);
     if (app_state.rosbag_files.size() > 0) {
 //      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);

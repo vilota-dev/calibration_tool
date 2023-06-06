@@ -20,7 +20,8 @@ struct AppState {
   RosbagContainer rosbag_files;
   int selected; // selected rosbag_file for display
   AprilGridContainer aprilgrid_files;
-  cbdetect::Params checkerboard_params;
+  std::shared_ptr<cbdetect::Params> checkerboard_params;
+  basalt::CalibType selectedCalibType; // 0 for AprilGrid, 1 for Checkerboard
 
   std::map<std::string, uint64_t> num_topics_to_show; // for the rosbag inspector config
 
@@ -35,15 +36,18 @@ struct AppState {
 
   AppState() {
     spdlog::trace("Initializing AppState object");
+    cbdetect::Params cb_params;
+    this->checkerboard_params = std::make_shared<cbdetect::Params>(cb_params);
     this->selected = 0; // for the selected rosbag file
     this->selectedFrame = 0;
     immvisionParams = ImmVision::ImageParams();
     immvisionParams.ImageDisplaySize = cv::Size(600, 0);
     immvisionParams.ZoomKey = "z";
     immvisionParams.RefreshImage = true;
+    this->selectedCalibType = basalt::CalibType::AprilGrid;
 
     // Checkerboard params config
-    this->checkerboard_params.show_processing = true; // Prints the shit out.
+    this->checkerboard_params->show_processing = true; // Prints the shit out.
 
     // Delete later
     for (int i = 0; i < 200; ++i) {
@@ -72,64 +76,49 @@ struct AppState {
     }
   }
 
-//  void feed_images() {
-//    // Basically get the image data, and construct the image_data field in the RosbagDataset object
-//    // image_data is std::map<int64_t, std::vector<cv::Mat>> image_data;
-//
-//    for (int64_t t_ns: this->image_timestamps) {
-//      std::vector<cv::Mat> cv_img_vec; // One vector for each timestamp
-//      const std::vector<ImageData> &img_vec = this->rosbag_io.get()->get_image_data(t_ns);
-//
-//      for (size_t cam_id = 0; cam_id < this->rosbag_io.get()->get_num_cams(); cam_id++) {
-//        const ManagedImage<uint16_t>::Ptr &managed_image_ptr = img_vec[cam_id].img;
-//
-//        // Check if the managed_image_ptr is valid
-//        if (managed_image_ptr) {
-//          // Extract the image properties from the managed_image_ptr
-//          size_t width = managed_image_ptr->w;
-//          size_t height = managed_image_ptr->h;
-//          size_t pitch_bytes = managed_image_ptr->pitch;
-//
-//          // Create a cv::Mat with the appropriate size and data type
-//          cv::Mat image_mat_16u(height, width, CV_16U, managed_image_ptr->ptr, pitch_bytes);
-//
-//          cv::Mat image_mat_8u;
-//          image_mat_16u.convertTo(image_mat_8u, CV_8U, 1.0 / 256.0);
-//
-//          cv_img_vec.push_back(image_mat_8u);
-//
-//          // Do something with the converted cv::Mat (e.g., perform image processing or display)
-//          // ...
-//
-//          // Note: The cv::Mat `image_mat_8u` contains the scaled-down 8-bit values.
-//          // Make sure the ManagedImage remains valid during the lifetime of `image_mat_8u`.
-//          // otherwise, the cv::Mat will contain invalid data.
-//        }
-//      }
-//
-//      this->image_data.insert({t_ns, cv_img_vec});
-//    }
-//
-//    spdlog::info("Loaded {} timestamps into memory", this->image_timestamps.size());
-//  }
-
   void detectCorners() {
     if (processing_thread) {
       processing_thread->join();
       processing_thread.reset();
     }
 
-    if (this->rosbag_files.size() == 0 || this->aprilgrid_files.size() == 0) {
-      spdlog::debug("No rosbag or aprilgrid files loaded");
-      return;
+    spdlog::debug("Selected mode is {}", this->selectedCalibType == basalt::CalibType::AprilGrid ? "AprilGrid" : "Checkerboard");
+
+    switch(this->selectedCalibType) {
+      case basalt::CalibType::AprilGrid:
+        if (this->rosbag_files.size() == 0 || this->aprilgrid_files.size() == 0) {
+          spdlog::debug("No rosbag or aprilgrid files loaded");
+          return;
+        }
+      case basalt::CalibType::Checkerboard:
+        if (this->rosbag_files.size() == 0) {
+          spdlog::debug("No rosbag files loaded");
+          return;
+        }
+      default:
+        break; // Correctly configured
     }
 
     // Change this to not even reset the thread when there's cached corners.
     processing_thread = std::make_shared<std::thread>([this]() {
-      spdlog::trace("Started detecting corners thread");
+      spdlog::trace("Started corner detection worker thread");
+      std::shared_ptr<CalibParams> params;
+      std::shared_ptr<Calibrator> calibrator;
 
-      CalibHelper::detectCorners(this->rosbag_files[this->selected], this->aprilgrid_files[this->selected]);
-      spdlog::trace("Corner detection is done");
+      switch(this->selectedCalibType) {
+        case basalt::CalibType::AprilGrid:
+          params = std::make_shared<basalt::AprilGridParams>(this->aprilgrid_files[this->selected]);
+          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selected]);
+          break;
+        case basalt::CalibType::Checkerboard:
+          params = std::make_shared<basalt::CheckerboardParams>(this->checkerboard_params);
+          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selected]);
+        default:
+          std::runtime_error("Invalid calibration type selected");
+          break;
+      }
+
+      calibrator->detectCorners(params);
     });
   }
 
@@ -148,7 +137,7 @@ struct AppState {
     processing_thread = std::make_shared<std::thread>([this]() {
       spdlog::trace("Started detecting checkerboard corners thread");
 
-      CalibHelper::detectCheckerboardCorners(this->rosbag_files[this->selected], this->checkerboard_params);
+//      CalibHelper::detectCheckerboardCorners(this->rosbag_files[this->selected], this->checkerboard_params);
       spdlog::trace("Checkerboard corner detection is done");
     });
 

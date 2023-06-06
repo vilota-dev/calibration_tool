@@ -9,11 +9,11 @@ set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 
 # Project submodules
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_subdirectory("external")
 
 # Add source files
-set(SOURCES src/main.cpp)
+set(SOURCES src/main.cpp src/calibration/calibration_helper.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${SOURCES})
