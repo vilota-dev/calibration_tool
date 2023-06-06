@@ -11,16 +11,6 @@
 	path = external/nativefiledialog_extended
 	url = https://github.com/btzy/nativefiledialog-extended
   ignore = dirty
-[submodule "cereal"]
-	path = external/cereal
-	url = https://github.com/USCiLab/cereal
-[submodule "Sophus"]
-	path = external/Sophus
-	url = https://github.com/strasdat/Sophus/
-  ignore = dirty
-[submodule "eigen"]
-	path = external/eigen
-	url = https://gitlab.com/libeigen/eigen
 [submodule "glad"]
 	path = external/glad
 	url = https://github.com/Dav1dde/glad/
@@ -36,5 +26,4 @@
 	url = https://github.com/ros/roscpp_core
 [submodule "basalt-headers"]
 	path = external/basalt-headers
-	url = https://gitlab.com/VladyslavUsenko/basalt-headers/
-  ignore = dirty
+	url = https://github.com/vilota-dev/basalt-headers

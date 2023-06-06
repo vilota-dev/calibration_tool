@@ -7,6 +7,7 @@ set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 
 # Preprocessor Macros
 add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+add_compile_definitions(SOPHUS_USE_BASIC_LOGGING)
 
 # Project submodules
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)

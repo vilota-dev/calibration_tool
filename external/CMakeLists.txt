@@ -22,7 +22,7 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
-add_library(gui STATIC ${GUI_SOURCES})
+add_library(gui SHARED ${GUI_SOURCES})
 
 target_include_directories(gui PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/glad/include"
@@ -35,12 +35,8 @@ target_include_directories(gui PUBLIC
 target_link_libraries(gui PUBLIC glfw OpenGL::GL ${OpenCV_LIBS})
 
 #### Non-gui libraries
-# Disable sophus tests and examples
-set(BUILD_SOPHUS_TESTS OFF CACHE BOOL "Disable Sophus tests")
-set(BUILD_SOPHUS_EXAMPLES OFF CACHE BOOL "Disable Sophus examples")
 
 add_subdirectory("nativefiledialog_extended")
-add_subdirectory("Sophus")
 add_subdirectory("ros")
 add_subdirectory("apriltag")
 find_package(TBB REQUIRED)
@@ -49,12 +45,12 @@ add_library(non_gui INTERFACE)
 
 target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/cereal/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Eigen"
         "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog_extended/src/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/cereal/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/eigen"
+        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/Sophus"
         "${CMAKE_CURRENT_SOURCE_DIR}/apriltag/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/Sophus"
         "${CMAKE_CURRENT_SOURCE_DIR}/ros"
         "${OpenCV_INCLUDE_DIRS}"
         "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
@@ -64,7 +60,7 @@ target_link_libraries(non_gui INTERFACE
         TBB::tbb
         apriltag
         nfd
-        Sophus::Sophus
         rosbag
         "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/lib/libcbdetect.dylib"
         )
+
