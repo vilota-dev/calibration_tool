@@ -39,6 +39,7 @@ target_link_libraries(gui PUBLIC glfw OpenGL::GL ${OpenCV_LIBS})
 add_subdirectory("nativefiledialog_extended")
 add_subdirectory("ros")
 add_subdirectory("apriltag")
+add_subdirectory("libcbdetect")
 find_package(TBB REQUIRED)
 
 add_library(non_gui INTERFACE)
