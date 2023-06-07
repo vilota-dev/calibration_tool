@@ -27,3 +27,6 @@
 [submodule "basalt-headers"]
 	path = external/basalt-headers
 	url = https://github.com/vilota-dev/basalt-headers
+[submodule "ros_comm"]
+	path = external/ros/ros_comm
+	url = https://github.com/vilota-dev/ros_comm/
