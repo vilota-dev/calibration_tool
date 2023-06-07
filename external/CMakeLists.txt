@@ -67,5 +67,5 @@ target_link_libraries(non_gui INTERFACE
 if(APPLE)
     target_link_libraries(non_gui INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/lib/libcbdetect.dylib")
 elseif(UNIX)
-    target_link_libraries(non_gui INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/lib/libcbdetect.so")
+    target_link_libraries(non_gui INTERFACE pthread "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/lib/libcbdetect.so")
 endif()
