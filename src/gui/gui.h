@@ -15,7 +15,7 @@
 #include <vector>
 
 #include "spdlog/spdlog.h"
-#include <nfd.h>
+#include <nfd.hpp>
 
 #include <cstdio>
 #include <filesystem>
@@ -72,17 +72,19 @@ void config_gui(AppState &app_state) {
 }
 
 void draw_main_menu_bar(AppState &app_state) {
-  static nfdchar_t *outPath;
+//  static nfdchar_t *outPath;
+  static NFD::UniquePath outPath;
 
   ImGui::BeginMainMenuBar();
   if (ImGui::BeginMenu("File")) {
     if (ImGui::MenuItem("Load ROS .bag file")) {
       static nfdfilteritem_t bagFilter[1] = {{"ROS .bag file", "bag"}}; // support for png later
-      nfdresult_t result = NFD_OpenDialog(&outPath, bagFilter, 1, NULL);
+//      nfdresult_t result = NFD_OpenDialog(&outPath, bagFilter, 1, NULL);
+      nfdresult_t result = NFD::OpenDialog(outPath, bagFilter, 1);
       if (result == NFD_OKAY) {
-        app_state.loadDataset(outPath);
-        spdlog::debug("Success! File loaded from {}", outPath);
-        NFD_FreePath(outPath);
+//        app_state.loadDataset(outPath);
+//        spdlog::debug("Success! File loaded from {}", outPath);
+//        NFD_FreePath(outPath);
       } else if (result == NFD_CANCEL) {
         spdlog::debug("User pressed cancel.");
       } else {
@@ -90,19 +92,19 @@ void draw_main_menu_bar(AppState &app_state) {
       }
     }
 
-    if (ImGui::MenuItem("Load AprilGrid .json file")) {
-      static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
-      nfdresult_t result = NFD_OpenDialog(&outPath, aprilgridFilter, 1, NULL);
-      if (result == NFD_OKAY) {
-        spdlog::debug("Success! File loaded from {}", outPath);
-        app_state.loadDataset(outPath);
-        NFD_FreePath(outPath);
-      } else if (result == NFD_CANCEL) {
-        spdlog::debug("User pressed cancel.");
-      } else {
-        spdlog::error("Error: {}", NFD_GetError());
-      }
-    }
+//    if (ImGui::MenuItem("Load AprilGrid .json file")) {
+//      static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
+//      nfdresult_t result = NFD_OpenDialog(&outPath, aprilgridFilter, 1, NULL);
+//      if (result == NFD_OKAY) {
+//        spdlog::debug("Success! File loaded from {}", outPath);
+//        app_state.loadDataset(outPath);
+//        NFD_FreePath(outPath);
+//      } else if (result == NFD_CANCEL) {
+//        spdlog::debug("User pressed cancel.");
+//      } else {
+//        spdlog::error("Error: {}", NFD_GetError());
+//      }
+//    }
     ImGui::EndMenu();
   }
   ImGui::EndMainMenuBar();
@@ -114,7 +116,8 @@ static void glfw_error_callback(int error, const char *description) {
 
 void run_gui() {
   AppState app_state;
-  NFD_Init();
+//  NFD_Init();
+  NFD::Guard nfdGuard;
 
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) {
@@ -243,7 +246,7 @@ void run_gui() {
   ImGui_ImplGlfw_Shutdown();
   ImPlot::DestroyContext();
   ImGui::DestroyContext();
-  NFD_Quit();
+//  NFD_Quit();
 
   glfwDestroyWindow(window);
   glfwTerminate();
