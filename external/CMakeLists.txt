@@ -63,4 +63,6 @@ target_link_libraries(non_gui INTERFACE
         nfd
         rosbag
         cbdetect
+        pthread
         )
+
