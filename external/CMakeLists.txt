@@ -41,6 +41,7 @@ add_subdirectory("ros")
 add_subdirectory("apriltag")
 add_subdirectory("libcbdetect")
 find_package(TBB REQUIRED)
+add_subdirectory("ecal-common/cpp")
 
 add_library(non_gui INTERFACE)
 
@@ -55,6 +56,7 @@ target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/ros"
         "${OpenCV_INCLUDE_DIRS}"
         "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
         )
 
 target_link_libraries(non_gui INTERFACE
@@ -64,5 +66,6 @@ target_link_libraries(non_gui INTERFACE
         rosbag
         cbdetect
         pthread
+        ecal_camera::ecal_camera
         )
 
