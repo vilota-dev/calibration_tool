@@ -33,3 +33,6 @@
 [submodule "ecal-common"]
 	path = external/ecal-common
 	url = https://github.com/vilota-dev/ecal-common/
+[submodule "ros_comm"]
+	path = external/ros/ros_comm
+	url = https://github.com/vilota-dev/ros_comm
