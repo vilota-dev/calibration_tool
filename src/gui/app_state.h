@@ -3,11 +3,13 @@
 #include "calibration/calibrator.hpp"
 #include "io/aprilgrid_container.h"
 #include "io/rosbag_container.h"
+#include "recorder/dataset.hpp"
 
 #include "imports.h"
 #include "libcbdetect/boards_from_corners.h"
 #include "libcbdetect/config.h"
 #include "libcbdetect/plot_corners.h"
+#include "ecal_camera/CameraInterface.hpp"
 
 #include <cstdio>
 #include <cstdlib>
@@ -21,6 +23,8 @@ struct AppState {
   int selected; // selected rosbag_file for display
   AprilGridContainer aprilgrid_files;
   std::shared_ptr<cbdetect::Params> checkerboard_params;
+  std::shared_ptr<vk::CameraParams> recorder_params;
+  std::shared_ptr<vk::RosbagDatasetRecorder> dataset_recorder;
   basalt::CalibType selectedCalibType; // 0 for AprilGrid, 1 for Checkerboard
 
   std::map<std::string, uint64_t> num_topics_to_show; // for the rosbag inspector config
@@ -38,6 +42,8 @@ struct AppState {
     spdlog::trace("Initializing AppState object");
     cbdetect::Params cb_params;
     this->checkerboard_params = std::make_shared<cbdetect::Params>(cb_params);
+    this->recorder_params = std::make_shared<vk::CameraParams>();
+    this->dataset_recorder = std::make_shared<vk::RosbagDatasetRecorder>();
     this->selected = 0; // for the selected rosbag file
     this->selectedFrame = 0;
     immvisionParams = ImmVision::ImageParams();

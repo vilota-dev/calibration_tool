@@ -5,6 +5,7 @@
 #include "gui/widgets/plot_error.h"
 #include "gui/widgets/img_display.h"
 #include "gui/widgets/checkerboard_config.h"
+#include "gui/widgets/recorder_config.hpp"
 #include "libcbdetect/boards_from_corners.h"
 #include "libcbdetect/config.h"
 #include "libcbdetect/find_corners.h"
@@ -212,6 +213,7 @@ void run_gui() {
     config_gui(app_state);
     draw_rosbag_inspector(app_state);
     draw_checkerboard_config(app_state, app_state.checkerboard_params);
+    draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params);
     if (app_state.rosbag_files.size() > 0) {
 //      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);
