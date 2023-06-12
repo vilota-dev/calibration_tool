@@ -1,0 +1,33 @@
+version: 2.1
+
+jobs:
+  build:
+    macos:
+      xcode: 14.2.0
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+            brew install cmake
+            brew install opencv
+            brew install glfw3
+            brew install tbb
+      - run:
+          name: Build Application
+          command: |
+            mkdir build
+            cd build
+            cmake ..
+            cmake --build . -j8
+      - run:
+          name: Compress Executable for Storage
+          command: tar -czvf executable.tar.gz build/calibration_tool.app
+      - store_artifacts:  # store the compressed executable as a build artifact
+          path: executable.tar.gz
+          destination: executable
+
+workflows:
+  build_app:
+    jobs:
+      - build
