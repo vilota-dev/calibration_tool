@@ -3,7 +3,8 @@
 #include "gui/imports.h"
 
 void draw_recorder_config(std::shared_ptr<vk::RosbagDatasetRecorder> &dataset_recorder,
-                          std::shared_ptr<vk::CameraParams>& recorder_params) {
+                          std::shared_ptr<vk::CameraParams>& recorder_params,
+                          std::shared_ptr<std::vector<cv::Mat>> &display_imgs) {
     if (!ImGui::Begin("Calibration Dataset Recorder Configuration")) {
         ImGui::End();
         return;
@@ -30,7 +31,7 @@ void draw_recorder_config(std::shared_ptr<vk::RosbagDatasetRecorder> &dataset_re
     }
 
     if (ImGui::Button("Start Recording")) {
-        dataset_recorder->init(*recorder_params, selectedMode);
+        dataset_recorder->init(*recorder_params, selectedMode, display_imgs);
         dataset_recorder->start_record();
     }
 

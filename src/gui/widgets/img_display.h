@@ -28,8 +28,5 @@ void img_display(ImmVision::ImageParams &image_params, AppState &app_state) {
       ImGui::SameLine();
     }
 
-
-
-
     ImGui::End();
 }

@@ -6,6 +6,7 @@
 #include "gui/widgets/img_display.h"
 #include "gui/widgets/checkerboard_config.h"
 #include "gui/widgets/recorder_config.hpp"
+#include "gui/widgets/live_view.hpp"
 #include "libcbdetect/boards_from_corners.h"
 #include "libcbdetect/config.h"
 #include "libcbdetect/find_corners.h"
@@ -89,7 +90,6 @@ void draw_main_menu_bar(AppState &app_state) {
         spdlog::error("Error: {}", NFD_GetError());
       }
     }
-
     if (ImGui::MenuItem("Load AprilGrid .json file")) {
       NFD::Guard nfdGuard;
       NFD::UniquePath outPath;
@@ -206,11 +206,11 @@ void run_gui() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // Make main window into dockspace
 
     draw_main_menu_bar(app_state);
-//    plot_mean_error(app_state.frame_rates);
     config_gui(app_state);
     draw_rosbag_inspector(app_state);
     draw_checkerboard_config(app_state, app_state.checkerboard_params);
-    draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params);
+    draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
+    draw_live_view(app_state.immvisionParams, app_state.display_imgs);
     if (app_state.rosbag_files.size() > 0) {
 //      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);

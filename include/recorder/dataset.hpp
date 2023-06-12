@@ -23,10 +23,11 @@ namespace vk {
     public:
         typedef std::shared_ptr<RosbagDatasetRecorder> Ptr;
 
-        void init(const vk::CameraParams &params, const RecordMode mode) {
+        void init(const vk::CameraParams &params, const RecordMode mode, std::shared_ptr<std::vector<cv::Mat>> &images) {
             this->m_mode = mode;
             this->m_recording = false;
             this->m_take_snapshot = false;
+            this->m_display_imgs = images;
             this->m_camera = vk::CameraFactory::getCameraHandler();
             this->m_camera->init(params);// Setup GUI for default params
 
@@ -71,6 +72,8 @@ namespace vk {
         std::atomic<int> m_num_msgs;
         std::atomic<bool> m_take_snapshot;
         std::atomic<bool> m_recording;
+
+        std::shared_ptr<std::vector<cv::Mat>> m_display_imgs;
 
         void callbackSyncedCameras(const std::vector<vk::CameraFrameData::Ptr> &dataVector);
         void callbackImu(vk::ImuFrameData::Ptr data);

@@ -13,6 +13,14 @@ namespace vk {
         } else if (!this->m_recording) {
             return;
         }
+
+        // Write to the this->display_imgs using the frame->image cv::Mat
+        int idx = 0;
+        for (auto &frame: dataVector) {
+            this->m_display_imgs->at(idx) = frame->image;
+            idx++;
+        }
+
         std::lock_guard<std::mutex> lock(this->m_mutex);
         switch (this->m_mode) {
             case RecordMode::CONTINUOUS: {

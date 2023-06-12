@@ -35,8 +35,8 @@ struct AppState {
 
   ImmVision::ImageParams immvisionParams;
 
-  // Delete later, just for show
-  std::vector<float> frame_rates; // Doesn't need to be shared_ptr, since the app_state object will remain alive till end of the main function
+  // Intialize vector of 3 cv::Mat
+  std::shared_ptr<std::vector<cv::Mat>> display_imgs = std::make_shared<std::vector<cv::Mat>>(3);
 
   AppState() {
     spdlog::trace("Initializing AppState object");
@@ -54,11 +54,6 @@ struct AppState {
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = true; // Prints the shit out.
-
-    // Delete later
-    for (int i = 0; i < 200; ++i) {
-      frame_rates.push_back(0.f);
-    }
   };
 
   ~AppState() {
