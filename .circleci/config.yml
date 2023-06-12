@@ -168,12 +168,43 @@
 
 version: 2.1
 
+commands:
+  build_capnproto:
+    steps:
+      - restore_cache:
+          key: &capnproto-cache capnproto-cache-{{ .Environment.CACHE_VERSION }}-{{ .Environment.MACHINE_OS }}-{{ .Environment.MACHINE_ARCH }}-{{ .Environment.CAPNPROTO_COMMIT }}
+      - run:
+          name: Check if capnproto already exist
+          command: |
+            DIR=~/git/capnproto
+            if [[ -d "$DIR" ]]
+            then
+                echo "$DIR exists on your filesystem."
+                circleci-agent step halt
+            fi
+      - run:
+          name: Install Capnproto dependency
+          command: |
+            git clone https://github.com/capnproto/capnproto.git capnproto
+            cd capnproto/c++
+            git checkout ${CAPNPROTO_COMMIT}
+            git submodule update --init --recursive
+            autoreconf -i
+            ./configure
+            make -j2 # check # skip check for now
+            sudo make install
+      - save_cache:
+          key: *capnproto-cache
+          paths:
+            - ~/git/capnproto
+
 jobs:
   build:
     machine:
       image: ubuntu-2204:current
     steps:
       - checkout
+      - build_capnproto
       - run:
           name: Update Submodules
           command: |
@@ -182,7 +213,7 @@ jobs:
           name: Install Dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y cmake libopencv-dev libglfw3-dev libtbb-dev libgtk-3-dev libboost-all-dev libeigen3-dev capnproto
+            sudo apt-get install -y cmake libopencv-dev libglfw3-dev libtbb-dev libgtk-3-dev libboost-all-dev libeigen3-dev
       - run:
           name: Build Application
           command: |
