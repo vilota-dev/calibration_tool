@@ -7,16 +7,19 @@ jobs:
     steps:
       - checkout
       - run:
+          name: calibration_tool submodule update
+          command: git submodule update --init --recursive
+      - run:
           name: Install Dependencies
           command: |
             brew install cmake
             brew install opencv
             brew install glfw3
             brew install tbb
+            brew install capnp
       - run:
           name: Build Application
           command: |
-            git submodule update --init --recursive
             mkdir build
             cd build
             cmake ..
