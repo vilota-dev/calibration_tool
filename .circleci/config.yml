@@ -170,8 +170,8 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-      - image: ubuntu2204-amd64
+    machine:
+      image: ubuntu-2204:current
     steps:
       - checkout
       - run:
