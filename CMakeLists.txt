@@ -48,7 +48,7 @@ if(UNIX AND NOT APPLE)
             RUNTIME DESTINATION bin
             )
 
-    install(TARGETS gui non_gui cbdetect
+    install(TARGETS gui non_gui cbdetect TBB::tbb
             LIBRARY DESTINATION lib
             )
 
