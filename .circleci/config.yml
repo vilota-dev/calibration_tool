@@ -206,6 +206,12 @@ jobs:
       - checkout
       - build_capnproto
       - run:
+          name: Install eCAL dependency
+          command: |
+            sudo add-apt-repository -y ppa:ecal/ecal-5.11
+            sudo apt-get update
+            sudo apt-get install ecal
+      - run:
           name: Update Submodules
           command: |
             git submodule update --init --recursive
