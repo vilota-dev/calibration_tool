@@ -48,7 +48,7 @@ if(UNIX AND NOT APPLE)
             RUNTIME DESTINATION bin
             )
 
-    install(TARGETS gui non_gui
+    install(TARGETS gui non_gui cbdetect
             LIBRARY DESTINATION lib
             )
 

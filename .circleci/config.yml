@@ -230,7 +230,6 @@ jobs:
             cpack
             mkdir artifacts
             cp *.deb artifacts
-            cp *.tar.gz artifacts
             ldd calibration_tool
 #      - run:
 #          name: Copy libcbdetect to build folder
