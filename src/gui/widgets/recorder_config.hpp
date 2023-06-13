@@ -10,7 +10,7 @@ void draw_recorder_config(std::shared_ptr<vk::RosbagDatasetRecorder> &dataset_re
         return;
     }
 
-    static vk::RecordMode selectedMode = vk::RecordMode::CONTINUOUS;
+    static vk::RecordMode selectedMode = vk::RecordMode::SNAPSHOTS;
     static std::map<vk::RecordMode, std::string> recordModeNames = {
             {vk::RecordMode::CONTINUOUS, "Continuous"},
             {vk::RecordMode::SNAPSHOTS, "Snapshot"}

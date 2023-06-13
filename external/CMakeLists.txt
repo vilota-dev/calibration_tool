@@ -40,6 +40,7 @@ add_subdirectory("nativefiledialog_extended")
 add_subdirectory("ros")
 add_subdirectory("apriltag")
 add_subdirectory("libcbdetect")
+add_subdirectory(spdlog)
 find_package(TBB REQUIRED)
 add_subdirectory("ecal-common/cpp")
 
@@ -61,6 +62,7 @@ target_include_directories(non_gui INTERFACE
 
 target_link_libraries(non_gui INTERFACE
         TBB::tbb
+        spdlog::spdlog
         apriltag
         nfd
         rosbag
