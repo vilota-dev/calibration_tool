@@ -8,6 +8,16 @@ set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_helpers.cmake")
 detectOS()
 
+if (APPLE)
+   # Do nothing
+elseif (UNIX AND NOT APPLE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation Directory" FORCE)
+    endif()
+endif ()
+
 # Preprocessor Macros
 add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
 if (APPLE)
@@ -30,3 +40,21 @@ add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE gui non_gui)
+
+
+# Installs
+if(UNIX AND NOT APPLE)
+    install(TARGETS ${PROJECT_NAME}
+            RUNTIME DESTINATION bin
+            )
+
+    install(TARGETS gui non_gui
+            LIBRARY DESTINATION lib
+            )
+
+    set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+    set(CPACK_PACKAGE_VERSION "1.0.0")
+    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
+    set(CPACK_GENERATOR "DEB")
+    include(CPack)
+endif()
