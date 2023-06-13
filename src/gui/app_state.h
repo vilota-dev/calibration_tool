@@ -46,10 +46,8 @@ struct AppState {
     this->dataset_recorder = std::make_shared<vk::RosbagDatasetRecorder>();
     this->selected = 0; // for the selected rosbag file
     this->selectedFrame = 0;
-    immvisionParams = ImmVision::ImageParams();
-    immvisionParams.ImageDisplaySize = cv::Size(600, 0);
-    immvisionParams.ZoomKey = "z";
-    immvisionParams.RefreshImage = true;
+    this->immvisionParams = ImmVision::ImageParams();
+    this->immvisionParams.RefreshImage = true;
     this->selectedCalibType = basalt::CalibType::AprilGrid;
 
     // Checkerboard params config

@@ -210,7 +210,7 @@ void run_gui() {
     draw_rosbag_inspector(app_state);
     draw_checkerboard_config(app_state, app_state.checkerboard_params);
     draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
-    draw_live_view(app_state.immvisionParams, app_state.display_imgs);
+    draw_live_view(app_state.display_imgs);
     if (app_state.rosbag_files.size() > 0) {
 //      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);
