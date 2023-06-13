@@ -227,12 +227,16 @@ jobs:
             cd build
             cmake ..
             cmake --build . -j8
-      - run:
-          name: Compress Executable for Storage
-          command: tar -czvf executable.tar.gz build/*
-      - store_artifacts:  # store the compressed executable as a build artifact
-          path: executable.tar.gz
-          destination: executable
+            cpack
+            mkdir artifacts
+            cp *.deb artifacts
+            cp *.tar.gz artifacts
+            ldd calibration_tool
+#      - run:
+#          name: Copy libcbdetect to build folder
+#          command: cp external/libcbdetect/lib/Release/libcbdetect.so build/
+      - store_artifacts:
+          path: ~/project/build/artifacts
 
 workflows:
   build_app:
