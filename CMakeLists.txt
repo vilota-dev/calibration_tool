@@ -4,19 +4,10 @@ project(calibration_tool)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_REQUIRED_FLAGS "-Wno-error")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_helpers.cmake")
 detectOS()
-
-if (APPLE)
-   # Do nothing
-elseif (UNIX AND NOT APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN")
-    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation Directory" FORCE)
-    endif()
-endif ()
 
 # Preprocessor Macros
 add_definitions(-DPROJECT_ROOT="${CMAKE_SOURCE_DIR}")
@@ -41,6 +32,16 @@ add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE gui non_gui)
 
+if (APPLE)
+    # Do nothing
+elseif (UNIX AND NOT APPLE)
+    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN")
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation Directory" FORCE)
+    endif()
+endif ()
+
 
 # Installs
 if(UNIX AND NOT APPLE)
@@ -48,7 +49,7 @@ if(UNIX AND NOT APPLE)
             RUNTIME DESTINATION bin
             )
 
-    install(TARGETS gui non_gui cbdetect TBB::tbb
+    install(TARGETS gui non_gui cbdetect
             LIBRARY DESTINATION lib
             )
 

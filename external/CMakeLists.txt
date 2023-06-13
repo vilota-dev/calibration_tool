@@ -60,6 +60,13 @@ target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
         )
 
+if(NOT TBB_USE_GLIBCXX_VERSION AND UNIX AND NOT APPLE)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        string(REPLACE "." "0" TBB_USE_GLIBCXX_VERSION ${CMAKE_CXX_COMPILER_VERSION})
+    endif()
+    add_definitions(-DTBB_USE_GLIBCXX_VERSION=${TBB_USE_GLIBCXX_VERSION})
+endif()
+
 target_link_libraries(non_gui INTERFACE
         TBB::tbb
         spdlog::spdlog
