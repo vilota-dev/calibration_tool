@@ -187,7 +187,7 @@ commands:
           command: |
             git clone https://github.com/capnproto/capnproto.git capnproto
             cd capnproto/c++
-            git checkout ${CAPNPROTO_COMMIT}
+            git checkout v0.10.2
             git submodule update --init --recursive
             autoreconf -i
             ./configure
