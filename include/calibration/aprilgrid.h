@@ -16,6 +16,7 @@ namespace basalt {
         ar(cereal::make_nvp("tagRows", tagRows));
         ar(cereal::make_nvp("tagSize", tagSize));
         ar(cereal::make_nvp("tagSpacing", tagSpacing));
+        ar(cereal::make_nvp("tagFamily", tagFamily));
         ar(cereal::make_nvp("lowId", lowId));
       } else {
         std::cerr << "Could not open aprilgrid configuration: " << config_path
@@ -113,12 +114,10 @@ namespace basalt {
     Eigen::aligned_vector<Eigen::Vector4d> aprilgrid_vignette_pos_3d;
 
     inline const std::string &get_file_path() const { return file_path; }
-
     inline int getTagCols() const { return tagCols; }
-
     inline int getTagRows() const { return tagRows; }
-
     inline int getLowId() const { return lowId; }
+    inline std::string getTagFamily() const { return tagFamily; }
 
   private:
     std::string file_path;
@@ -126,6 +125,7 @@ namespace basalt {
     int tagRows;        // number of apriltags
     double tagSize;     // size of apriltag, edge to edge [m]
     double tagSpacing;  // ratio of space between tags to tagSize
+    std::string tagFamily;
     double lowId = 25;
   };
 

@@ -83,8 +83,7 @@ namespace basalt {
 
   class AprilGridParams : public CalibParams {
   public:
-    AprilGridParams(const std::shared_ptr<AprilGrid> &april_grid) : ad(
-            april_grid->getTagCols() * april_grid->getTagRows()) {
+    AprilGridParams(const std::shared_ptr<AprilGrid> &april_grid) : ad(april_grid->getTagCols() * april_grid->getTagRows(), april_grid->getTagFamily(), april_grid->getLowId()) {
       this->april_grid = april_grid;
     }
 
