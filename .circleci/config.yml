@@ -201,7 +201,7 @@ commands:
 jobs:
   build:
     machine:
-      image: ubuntu-2204:current
+      image: ubuntu-2004:current
     steps:
       - checkout
       - build_capnproto
