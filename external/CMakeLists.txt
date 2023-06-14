@@ -42,6 +42,7 @@ add_subdirectory("apriltag")
 add_subdirectory("libcbdetect")
 add_subdirectory(spdlog)
 find_package(TBB REQUIRED)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX}) # Link capnproto statically
 add_subdirectory("ecal-common/cpp")
 
 add_library(non_gui INTERFACE)
