@@ -31,6 +31,13 @@ commands:
             - ~/git/capnproto
   build_calibration_tool:
     steps:
+      - restore_cache:
+          key: *capnproto-cache
+      - run:
+          name: Install Capnproto
+          command: |
+            cd capnproto/c++
+            sudo make install
       - checkout
       - run:
           name: Install eCAL dependency
