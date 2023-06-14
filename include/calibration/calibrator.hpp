@@ -6,6 +6,7 @@
 #include "libcbdetect/image_normalization_and_gradients.h"
 #include "libcbdetect/get_init_location.h"
 #include "libcbdetect/plot_corners.h"
+#include "libcbdetect/boards_from_corners.h"
 #include "libcbdetect/filter_corners.h"
 #include "libcbdetect/refine_corners.h"
 #include "libcbdetect/polynomial_fit.h"

@@ -24,11 +24,16 @@ namespace basalt {
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         CalibCornerData() = default;
 
-        CalibCornerData(const cbdetect::Corner &checkerboard_corner) {
-            for (int i = 0; i < checkerboard_corner.p.size(); i++) {
-                corners.emplace_back(checkerboard_corner.p[i].x, checkerboard_corner.p[i].y);
-                this->corner_ids.push_back(i);
-                this->radii.push_back(checkerboard_corner.r[i]);
+        CalibCornerData(const cbdetect::Corner &checkerboard_corner, const cbdetect::Board &board) {
+            for(int i = 0; i < board.idx.size(); ++i) {
+                for(int j = 0; j < board.idx[i].size(); ++j) {
+                    if(board.idx[i][j] >= 0) { // if the corner is valid
+                        int original_index = board.idx[i][j];
+                        this->corners.emplace_back(checkerboard_corner.p[original_index].x, checkerboard_corner.p[original_index].y);
+                        this->corner_ids.push_back(original_index); // keep the original index
+                        this->radii.push_back(checkerboard_corner.r[original_index]);
+                    }
+                }
             }
             // Lose the other fields
             // std::vector<cv::Point2d> v1;

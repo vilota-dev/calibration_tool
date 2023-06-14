@@ -19,11 +19,22 @@ namespace basalt {
     }
 
     // Requires intermediate cbdetect::Params struct
+    std::vector<cbdetect::Board> boards;
     cbdetect::Corner corners; // will be populated for this image
-
     cbdetect::find_corners(image, corners, *this->cb_params);
-    ccd_good = CalibCornerData(corners);
-//      ccd_bad = CalibCornerData // Nothing is rejected?
+    cbdetect::boards_from_corners(image, corners, boards, *this->cb_params); // Does the filtering for us
+
+//    for(int i = 0; i < boards[0].idx.size(); ++i) {
+//      for(int j = 0; j < boards[0].idx[i].size(); ++j) {
+//          std::cout << boards[0].idx[i][j] << ' ';
+//      }
+//      std::cout << std::endl;
+//    }
+
+    if (!boards.empty()) {
+        ccd_good = CalibCornerData(corners, boards[0]); // Assuming you want to use the first board
+//        ccd_bad = CalibCornerData // Nothing is rejected?
+    }
   }
 
 
