@@ -38,16 +38,18 @@ commands:
           command: |
             cd capnproto/c++
             sudo make install
-      - checkout
+      - checkout:
+          path: calibration_tool
+      - run:
+          name: calibration_tool submodule update
+          command: |
+            git -C calibration_tool submodule update --init --recursive
       - run:
           name: Install eCAL dependency
           command: |
             sudo add-apt-repository -y ppa:ecal/ecal-5.11
             sudo apt-get update
             sudo apt-get install ecal
-      - run:
-            name: Update Submodules
-            command: git submodule update --init --recursive
       - run:
           name: Install Dependencies
           command: |
@@ -56,20 +58,20 @@ commands:
       - run:
           name: Build calibration_tool
           command: |
-              mkdir build
+              cd calibration_tool
+              cmake -S. -Bbuild
+              cmake --build build -j2
               cd build
-              cmake ..
-              cmake --build . -j8
               cpack
               mkdir artifacts
               cp *.deb artifacts
       - run:
           name: Run LDD command
           command: |
-            cd build
+            cd calibration_tool/build
             ldd calibration_tool
       - store_artifacts:
-          path: ~/project/build/artifacts
+          path: ~/git/calibration_tool/build/artifacts
 
 executors:
   ubuntu2204-amd64: &ubuntu2204-amd64-executor
