@@ -6,11 +6,6 @@ void img_display(ImmVision::ImageParams &image_params, AppState &app_state) {
       ImGui::End();
       return;
     }
-    // ImGui Combobox
-    static const char *items[] = {"Left", "Right", "Both"};
-    static int item_current = 0;
-    ImGui::Combo("Camera", &item_current, items, IM_ARRAYSIZE(items));
-
     ImGui::SliderInt("Selected Frame", &app_state.selectedFrame, 0, app_state.rosbag_files[app_state.selected]->get_image_timestamps().size() - 1);
     ImGui::NewLine();
 

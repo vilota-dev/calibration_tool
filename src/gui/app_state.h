@@ -51,7 +51,7 @@ struct AppState {
     this->selectedCalibType = basalt::CalibType::AprilGrid;
 
     // Checkerboard params config
-    this->checkerboard_params->show_processing = true; // Prints the shit out.
+    this->checkerboard_params->show_processing = false; // Prints the shit out.
   };
 
   ~AppState() {
