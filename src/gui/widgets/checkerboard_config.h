@@ -77,7 +77,11 @@ void draw_checkerboard_config(AppState &app_state, std::shared_ptr<cbdetect::Par
     } else if (app_state.selectedCalibType == CalibType::Checkerboard_OpenCV) {
         ImGui::InputInt("Rows", &app_state.opencv_checkerboard_params->width);
         ImGui::InputInt("Cols", &app_state.opencv_checkerboard_params->height);
-        // Add flags later
+
+        ImGui::Checkbox("Adaptive Threshold", &app_state.opencv_checkerboard_params->adaptiveThresh);
+        ImGui::Checkbox("Normalize Image", &app_state.opencv_checkerboard_params->normalizeImage);
+        ImGui::Checkbox("Filter Quads", &app_state.opencv_checkerboard_params->filterQuads);
+        ImGui::Checkbox("Fast Check", &app_state.opencv_checkerboard_params->fastCheck);
     }
 
     ImGui::End();

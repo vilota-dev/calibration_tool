@@ -40,15 +40,20 @@ namespace basalt {
         dst[i] = (src[i] >> 8);
     }
     std::vector<cv::Point2f> corners;
+
     //CALIB_CB_FAST_CHECK saves a lot of time on images
     //that do not contain any chessboard corners
     bool patternfound = findChessboardCorners(image, this->pattern_size, corners, this->flags);
 
     if(patternfound)
-        cornerSubPix(image, corners, cv::Size(11, 11), cv::Size(-1, -1),
-                     TermCriteria(TermCriteria::MAX_ITER|TermCriteria::EPS , 30, 0.1));
+        cornerSubPix(image, corners, this->pattern_size, cv::Size(-1, -1),
+                     TermCriteria(TermCriteria::MAX_ITER|TermCriteria::EPS , 40, 0.001));
 
-    ccd_good = CalibCornerData(corners);
+    if (patternfound) {
+        ccd_good = CalibCornerData(corners);
+    } else {
+        ccd_bad = CalibCornerData(corners);
+    }
   }
 
 
