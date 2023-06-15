@@ -17,7 +17,7 @@ public:
     return files_list.size();
   }
 
-  std::shared_ptr<basalt::AprilGrid> &operator[](int index) {
+  basalt::AprilGridPtr &operator[](int index) {
     std::lock_guard<std::mutex> lock(mtx);
     if (index >= files_list.size()) {
       throw std::out_of_range(std::string("index: ") + std::to_string(index));
@@ -27,22 +27,22 @@ public:
     return *itr;
   }
 
-  void addFiles(std::vector<std::string> const &files) {
+  void addFiles(std::vector<basalt::AprilGridPtr> const &files) {
     std::lock_guard<std::mutex> lock(mtx);
 
     for (auto &&file: files) {
       try {
         if (std::find_if(files_list.begin(), files_list.end(),
-                         [file](const std::shared_ptr<basalt::AprilGrid> &r) { return r.get()->get_file_path() == file; }) !=
+                         [file](const basalt::AprilGridPtr &r) { return r->get_name() == file->get_name(); }) !=
             files_list.end()) {
           throw std::runtime_error(tmpstringstream() << "April Grid \"" << file << "\" is already loaded");
         }
-        std::shared_ptr<basalt::AprilGrid> file_ptr = std::make_shared<basalt::AprilGrid>(file);
-        files_list.emplace_back(file_ptr);
+        files_list.emplace_back(file);
+        spdlog::debug("Successfully added April Grid file: {}", file->get_name());
       }
       catch (const std::exception &e) {
-        last_error_msg += e.what();
-        last_error_msg += "\n";
+        spdlog::error("{}", e.what());
+        spdlog::warn("Please fix the file and try again");
       }
     }
   }
@@ -58,20 +58,7 @@ public:
     return std::distance(files_list.begin(), it);
   }
 
-  bool has_errors() const {
-    return !last_error_msg.empty();
-  }
-
-  std::string get_last_error() {
-    return last_error_msg;
-  }
-
-  void clear_errors() {
-    last_error_msg.clear();
-  }
-
 protected:
   std::mutex mtx;
-  std::list<std::shared_ptr<basalt::AprilGrid>> files_list;
-  std::string last_error_msg;
+  std::list<basalt::AprilGridPtr> files_list;
 };
