@@ -21,10 +21,17 @@ namespace basalt {
     struct OpenCVParams {
         int width;
         int height;
-//        int flags;
-        OpenCVParams(int width, int height) {
+        bool adaptiveThresh;
+        bool normalizeImage;
+        bool filterQuads;
+        bool fastCheck;
+        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage, bool filterQuads, bool fastCheck) {
             this->width = width;
             this->height = height;
+            this->adaptiveThresh = adaptiveThresh;
+            this->normalizeImage = normalizeImage;
+            this->filterQuads = filterQuads;
+            this->fastCheck = fastCheck;
         }
     };
 
@@ -137,9 +144,13 @@ namespace basalt {
 
     class OpenCVCheckerboardParams : public CalibParams {
     public:
-        OpenCVCheckerboardParams(int width, int height) {
-            this->pattern_size = cv::Size(width, height);
-            this->flags = cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK;
+        OpenCVCheckerboardParams(OpenCVParams& params) {
+            this->pattern_size = cv::Size(params.width, params.height);
+            // Access prams to get flags
+            this->flags += params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
+            this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
+            this->flags += params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
+            this->flags += params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
         }
 
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
