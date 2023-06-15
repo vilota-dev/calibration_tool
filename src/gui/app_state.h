@@ -20,10 +20,14 @@ using namespace basalt;
 
 struct AppState {
   RosbagContainer rosbag_files;
-  size_t selectedRosbag = 0; // selected rosbag_file for display
-  size_t selectedAprilGrid = 0;
+  int selectedRosbag = 0; // selected rosbag_file for display
+
   AprilGridContainer aprilgrid_files;
+  int selectedAprilGrid = 0;
+
   std::shared_ptr<cbdetect::Params> checkerboard_params;
+  std::shared_ptr<basalt::OpenCVParams> opencv_checkerboard_params;
+
   std::shared_ptr<vk::CameraParams> recorder_params;
   std::shared_ptr<vk::RosbagDatasetRecorder> dataset_recorder;
   basalt::CalibType selectedCalibType; // 0 for AprilGrid, 1 for Checkerboard
@@ -48,12 +52,12 @@ struct AppState {
     this->selectedFrame = 0;
     this->immvisionParams = ImmVision::ImageParams();
     this->immvisionParams.RefreshImage = true;
-    this->selectedCalibType = basalt::CalibType::Checkerboard;
+    this->selectedCalibType = basalt::CalibType::Checkerboard_CBDETECT;
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = false; // Prints the shit out.
+    this->opencv_checkerboard_params = std::make_shared<basalt::OpenCVParams>(8, 6);
 
-    // Load the commonly used april grids
     basalt::AprilGridPtr g1 = std::make_shared<basalt::AprilGrid>(7, 4, 0.0946, 0.3, 0, "16h5");
     std::vector<basalt::AprilGridPtr> commonGrids = { g1 };
     this->aprilgrid_files.addFiles(commonGrids);
@@ -67,19 +71,25 @@ struct AppState {
   }
 
   void loadDataset(const std::string &path) {
-    // Check the string path to see if it is a rosbag or aprilgrid
-    if (path.find(".bag") != std::string::npos) {
-      spdlog::debug("Loading rosbag file: {}", path);
-      rosbag_files.addFiles(std::vector<std::string>{path});
-      spdlog::debug("Size of rosbag_files: {}", rosbag_files.size());
-    } else if (path.find(".json") != std::string::npos) {
-      spdlog::debug("{}", path);
-      basalt::AprilGridPtr grid = std::make_shared<basalt::AprilGrid>(path);
-      aprilgrid_files.addFiles(std::vector<basalt::AprilGridPtr>{grid});
-      spdlog::debug("Size of aprilgrid_files: {}", aprilgrid_files.size());
-    } else {
-      spdlog::error("Unknown file type: {}", path);
+    if (processing_thread) {
+      processing_thread->join();
+      processing_thread.reset();
     }
+
+    processing_thread = std::make_shared<std::thread>([this, path]() {
+        if (path.find(".bag") != std::string::npos) {
+            spdlog::debug("Loading rosbag file: {}", path);
+            rosbag_files.addFiles(std::vector<std::string>{path});
+            spdlog::debug("Size of rosbag_files: {}", rosbag_files.size());
+        } else if (path.find(".json") != std::string::npos) {
+            spdlog::debug("{}", path);
+            basalt::AprilGridPtr grid = std::make_shared<basalt::AprilGrid>(path);
+            aprilgrid_files.addFiles(std::vector<basalt::AprilGridPtr>{grid});
+            spdlog::debug("Size of aprilgrid_files: {}", aprilgrid_files.size());
+        } else {
+            spdlog::error("Unknown file type: {}", path);
+        }
+    });
   }
 
   void detectCorners() {
@@ -93,16 +103,23 @@ struct AppState {
     switch(this->selectedCalibType) {
       case basalt::CalibType::AprilGrid:
         if (this->rosbag_files.size() == 0 || this->aprilgrid_files.size() == 0) {
-          spdlog::debug("No rosbag or aprilgrid files loaded");
+          spdlog::debug("No ROS .bag or April Grid files loaded");
           return;
         }
-      case basalt::CalibType::Checkerboard:
+      case basalt::CalibType::Checkerboard_CBDETECT:
         if (this->rosbag_files.size() == 0) {
-          spdlog::debug("No rosbag files loaded");
+          spdlog::debug("No ROS .bag files loaded");
           return;
         }
+      case basalt::CalibType::Checkerboard_OpenCV:
+        if (this->rosbag_files.size() == 0) {
+          spdlog::debug("No ROS .bag files loaded");
+          return;
+        }
+        break;
       default:
-        break; // Correctly configured
+        spdlog::error("Invalid calibration type selected");
+        break;
     }
 
     // Change this to not even reset the thread when there's cached corners.
@@ -116,12 +133,17 @@ struct AppState {
           params = std::make_shared<basalt::AprilGridParams>(this->aprilgrid_files[this->selectedAprilGrid]);
           calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
           break;
-        case basalt::CalibType::Checkerboard:
+        case basalt::CalibType::Checkerboard_CBDETECT:
           params = std::make_shared<basalt::CheckerboardParams>(this->checkerboard_params);
           calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
-        default:
-          std::runtime_error("Invalid calibration type selected");
           break;
+        case basalt::CalibType::Checkerboard_OpenCV:
+          params = std::make_shared<basalt::OpenCVCheckerboardParams>(this->opencv_checkerboard_params->width, this->opencv_checkerboard_params->height);
+          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
+          break;
+        default:
+          spdlog::error("Invalid calibration type selected");
+          std::exit(1);
       }
 
       calibrator->detectCorners(params);
@@ -150,13 +172,23 @@ struct AppState {
             // The radius is the threshold used for maximum displacement. The search region is slightly larger.
             const float radius = static_cast<float>(cr.radii[i]);
             const Eigen::Vector2d &c = cr.corners[i];
+            // Convert to cv::Point2f for opencv drawing
+            std::vector<cv::Point2f> cv_corners;
+            for (const auto &corner : cr.corners) {
+              cv_corners.emplace_back(corner[0], corner[1]);
+            }
             const auto idx = cr.corner_ids[i];
 
-            cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),
-                       cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+            if (this->selectedCalibType == basalt::CalibType::Checkerboard_OpenCV) {
+                cv::Size size(this->opencv_checkerboard_params->width, this->opencv_checkerboard_params->height);
+                cv::drawChessboardCorners(img_vec[cam_num], size, cv::Mat(cv_corners), true);
+            } else {
+                cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),
+                           cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
 
-            cv::putText(img_vec[cam_num], std::to_string(idx), cv::Point2i(c[0] - 12, c[1] - 6),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+                cv::putText(img_vec[cam_num], std::to_string(idx), cv::Point2i(c[0] - 12, c[1] - 6),
+                            cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+            }
           }
 
         }

@@ -24,17 +24,31 @@ namespace basalt {
     cbdetect::find_corners(image, corners, *this->cb_params);
     cbdetect::boards_from_corners(image, corners, boards, *this->cb_params); // Does the filtering for us
 
-//    for(int i = 0; i < boards[0].idx.size(); ++i) {
-//      for(int j = 0; j < boards[0].idx[i].size(); ++j) {
-//          std::cout << boards[0].idx[i][j] << ' ';
-//      }
-//      std::cout << std::endl;
-//    }
-
     if (!boards.empty()) {
         ccd_good = CalibCornerData(corners, boards); // Assuming you want to use the first board
 //        ccd_bad = CalibCornerData // Nothing is rejected?
     }
+  }
+
+  void OpenCVCheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, basalt::CalibCornerData &ccd_good, basalt::CalibCornerData &ccd_bad) {
+    using namespace cv;
+    cv::Mat image(img_raw.h, img_raw.w, CV_8U);
+    uint8_t *dst = image.ptr();
+    const uint16_t *src = img_raw.ptr;
+
+    for (size_t i = 0; i < img_raw.size(); i++) {
+        dst[i] = (src[i] >> 8);
+    }
+    std::vector<cv::Point2f> corners;
+    //CALIB_CB_FAST_CHECK saves a lot of time on images
+    //that do not contain any chessboard corners
+    bool patternfound = findChessboardCorners(image, this->pattern_size, corners, this->flags);
+
+    if(patternfound)
+        cornerSubPix(image, corners, cv::Size(11, 11), cv::Size(-1, -1),
+                     TermCriteria(TermCriteria::MAX_ITER|TermCriteria::EPS , 30, 0.1));
+
+    ccd_good = CalibCornerData(corners);
   }
 
 
@@ -66,7 +80,6 @@ namespace basalt {
                       CalibCornerData ccd_bad;
 
                       params->process(*img_vec[i].img, ccd_good, ccd_bad);
-
                       spdlog::debug("image ({},{})  detected {} corners ({} rejected)",
                                     timestamp_ns, i, ccd_good.corners.size(),
                                     ccd_bad.corners.size());

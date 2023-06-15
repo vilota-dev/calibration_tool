@@ -7,11 +7,25 @@
 #include <basalt/serialization/headers_serialization.h>
 #include <basalt/utils/apriltag.h>
 #include <tbb/concurrent_unordered_map.h>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/calib3d.hpp"
 
 namespace basalt {
     enum class CalibType {
-        Checkerboard,
+        Checkerboard_CBDETECT,
+        Checkerboard_OpenCV,
         AprilGrid
+    };
+
+    struct OpenCVParams {
+        int width;
+        int height;
+//        int flags;
+        OpenCVParams(int width, int height) {
+            this->width = width;
+            this->height = height;
+        }
     };
 
     struct CalibCornerData {
@@ -43,6 +57,15 @@ namespace basalt {
             //  std::vector<cv::Point2d> v2;
             //  std::vector<cv::Point2d> v3;
             //  std::vector<double> score;
+        }
+
+        CalibCornerData(const std::vector<cv::Point2f> cv_corners) {
+            int idx = 0;
+            for(const auto & i : cv_corners) {
+                this->corners.emplace_back(i.x, i.y);
+                this->corner_ids.push_back(idx++);
+                this->radii.push_back(0.0);
+            }
         }
     };
 
@@ -110,6 +133,20 @@ namespace basalt {
 
     protected:
         std::shared_ptr<cbdetect::Params> cb_params;
+    };
+
+    class OpenCVCheckerboardParams : public CalibParams {
+    public:
+        OpenCVCheckerboardParams(int width, int height) {
+            this->pattern_size = cv::Size(width, height);
+            this->flags = cv::CALIB_CB_ADAPTIVE_THRESH + cv::CALIB_CB_NORMALIZE_IMAGE + cv::CALIB_CB_FAST_CHECK;
+        }
+
+        void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
+
+    protected:
+        cv::Size pattern_size;
+        int flags;
     };
 }// namespace basalt
 
