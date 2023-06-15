@@ -32,7 +32,7 @@ namespace basalt {
 //    }
 
     if (!boards.empty()) {
-        ccd_good = CalibCornerData(corners, boards[0]); // Assuming you want to use the first board
+        ccd_good = CalibCornerData(corners, boards); // Assuming you want to use the first board
 //        ccd_bad = CalibCornerData // Nothing is rejected?
     }
   }
