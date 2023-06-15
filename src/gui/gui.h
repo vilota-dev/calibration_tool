@@ -2,7 +2,6 @@
 
 #include "io/dataset_io.h"
 #include "gui/widgets/rosbag_inspector.h"
-#include "gui/widgets/plot_error.h"
 #include "gui/widgets/img_display.h"
 #include "gui/widgets/checkerboard_config.h"
 #include "gui/widgets/recorder_config.hpp"
@@ -28,83 +27,37 @@
 #include <GLES2/gl2.h>
 #endif
 
-void config_gui(AppState &app_state) {
-  ImGui::Begin("Calibration GUI");
-
-  static bool show_corners = false;
-  ImGui::Checkbox("Show corners", &show_corners);
-
-  static bool show_corners_rejected = false;
-  ImGui::Checkbox("Show corners rejected", &show_corners_rejected);
-
-  // make a slider int
-  static int threshold = 0;
-  ImGui::SliderInt("Gaussian Blur", &threshold, 0, 101);
-
-  if (ImGui::Button("Load Dataset")) {
-    spdlog::info("Loading dataset");
-    // Run the CalibHelper::
-  }
-
-  if (ImGui::Button("Detect Corners")) {
-    spdlog::trace("Starting corner detection");
-    app_state.detectCorners();
-  }
-
-  if (ImGui::Button("Detect Checkerboard Corners")) {
-    spdlog::trace("Starting checkerboard corner detection");
-    app_state.detectCheckerboardCorners();
-  }
-
-  if (ImGui::Button("Draw Checkerboard")) {
-    spdlog::trace("Starting checkerboard drawing");
-    app_state.drawCheckerboardCorners();
-  }
-
-  if (ImGui::Button("Draw Corners")) {
-    spdlog::trace("Starting corner drawing");
-    app_state.drawCorners();
-  }
-
-  if (ImGui::Button("Optimize")) {
-    spdlog::info("Starting calibration");
-    // Optimize function
-  }
-  ImGui::End();
-}
-
 void draw_main_menu_bar(AppState &app_state) {
   ImGui::BeginMainMenuBar();
-  if (ImGui::BeginMenu("File")) {
-    if (ImGui::MenuItem("Load ROS .bag file")) {
-      NFD::Guard nfdGuard;
-      NFD::UniquePath outPath;
-      nfdfilteritem_t bagFilter[1] = {{"ROS .bag file", "bag"}}; // support for png later
-      nfdresult_t result = NFD::OpenDialog(outPath, bagFilter, 1);
-      if (result == NFD_OKAY) {
+  if (ImGui::SmallButton("Load ROS .bag file")) {
+    NFD::Guard nfdGuard;
+    NFD::UniquePath outPath;
+    nfdfilteritem_t bagFilter[1] = {{"ROS .bag file", "bag"}}; // support for png later
+    nfdresult_t result = NFD::OpenDialog(outPath, bagFilter, 1);
+    if (result == NFD_OKAY) {
         app_state.loadDataset(outPath.get());
         spdlog::debug("Success! File loaded from {}", outPath.get());
-      } else if (result == NFD_CANCEL) {
+    } else if (result == NFD_CANCEL) {
         spdlog::debug("User pressed cancel.");
-      } else {
+    } else {
         spdlog::error("Error: {}", NFD_GetError());
-      }
     }
-    if (ImGui::MenuItem("Load AprilGrid .json file")) {
-      NFD::Guard nfdGuard;
-      NFD::UniquePath outPath;
-      static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
-      nfdresult_t result = NFD::OpenDialog(outPath, aprilgridFilter, 1);
-      if (result == NFD_OKAY) {
-        app_state.loadDataset(outPath.get());
-        spdlog::debug("Success! File loaded from {}", outPath.get());
-      } else if (result == NFD_CANCEL) {
-        spdlog::debug("User pressed cancel.");
-      } else {
-        spdlog::error("Error: {}", NFD_GetError());
-      }
+  }
+
+  ImGui::Separator();
+
+  if (ImGui::SmallButton("Load AprilGrid .json file")) {
+    NFD::Guard nfdGuard;
+    NFD::UniquePath outPath;
+    static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
+    nfdresult_t result = NFD::OpenDialog(outPath, aprilgridFilter, 1);
+    if (result == NFD_OKAY) {
+      app_state.loadDataset(outPath.get());
+    } else if (result == NFD_CANCEL) {
+      spdlog::debug("User pressed cancel.");
+    } else {
+      spdlog::error("Error: {}", NFD_GetError());
     }
-    ImGui::EndMenu();
   }
   ImGui::EndMainMenuBar();
 }
@@ -173,12 +126,8 @@ void run_gui() {
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
   io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-  //io.ConfigViewportsNoAutoMerge = true;
-  //io.ConfigViewportsNoTaskBarIcon = true;
 
-  // Setup Dear ImGui style
   ImGui::StyleColorsDark();
-  //ImGui::StyleColorsLight();
 
   // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
   ImGuiStyle &style = ImGui::GetStyle();
@@ -191,9 +140,6 @@ void run_gui() {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init(glsl_version);
 
-  // Our state
-  bool show_demo_window = true;
-  //bool show_another_window = false;
   ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
   while (!glfwWindowShouldClose(window)) {
@@ -206,13 +152,11 @@ void run_gui() {
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // Make main window into dockspace
 
     draw_main_menu_bar(app_state);
-    config_gui(app_state);
     draw_rosbag_inspector(app_state);
     draw_checkerboard_config(app_state, app_state.checkerboard_params);
     draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
     draw_live_view(app_state.display_imgs);
     if (app_state.rosbag_files.size() > 0) {
-//      draw_calibration_settings(app_state);
       img_display(app_state.immvisionParams, app_state);
     }
 

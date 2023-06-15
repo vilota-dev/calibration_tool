@@ -48,7 +48,7 @@ struct AppState {
     this->selectedFrame = 0;
     this->immvisionParams = ImmVision::ImageParams();
     this->immvisionParams.RefreshImage = true;
-    this->selectedCalibType = basalt::CalibType::AprilGrid;
+    this->selectedCalibType = basalt::CalibType::Checkerboard;
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = false; // Prints the shit out.
@@ -121,27 +121,6 @@ struct AppState {
     });
   }
 
-  void detectCheckerboardCorners() {
-    if (processing_thread) {
-      processing_thread->join();
-      processing_thread.reset();
-    }
-
-    // Don't need aprilgrid json
-    if (this->rosbag_files.size() == 0) {
-      spdlog::debug("No rosbag files loaded");
-      return;
-    }
-
-    processing_thread = std::make_shared<std::thread>([this]() {
-      spdlog::trace("Started detecting checkerboard corners thread");
-
-//      CalibHelper::detectCheckerboardCorners(this->rosbag_files[this->selected], this->checkerboard_params);
-      spdlog::trace("Checkerboard corner detection is done");
-    });
-
-  }
-
   void drawCorners() {
     if (processing_thread) {
       processing_thread->join();
@@ -164,46 +143,12 @@ struct AppState {
             // The radius is the threshold used for maximum displacement. The search region is slightly larger.
             const float radius = static_cast<float>(cr.radii[i]);
             const Eigen::Vector2d &c = cr.corners[i];
+            const auto idx = cr.corner_ids[i];
 
             cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),
                        cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
-          }
 
-        }
-      }
-      spdlog::trace("Finished drawing corners");
-    });
-  }
-
-  void drawCheckerboardCorners() {
-    /*
-     * https://github.com/pthom/immvision/blob/df657767f08303438c8450e620bf406967cd1dad/src/immvision/internal/drawing/image_drawing.cpp#L23
-     * Draw the circles the same way the watched pixels are drawn in immvision.
-     * */
-    if (processing_thread) {
-      processing_thread->join();
-      processing_thread.reset();
-    }
-    // Draw the checkerboard corners using the cbdetect::Corner struct
-    processing_thread = std::make_shared<std::thread>([this]() {
-      spdlog::trace("Started drawing checkerboard corners");
-
-      for (auto ts: this->rosbag_files[this->selected]->get_image_timestamps()) {
-        spdlog::trace("Drawing corners for timestamp: {}", ts);
-        std::vector<cv::Mat> &img_vec = this->rosbag_files[this->selected]->image_data.at(ts);
-
-        for (int cam_num = 0; cam_num < this->rosbag_files[this->selected]->get_num_cams(); cam_num++) {
-          auto tcid = basalt::TimeCamId(ts, cam_num);
-          const cbdetect::Corner &corners = this->rosbag_files[this->selected]->checkerboard_corners.at(tcid);
-
-          for(int i = 0; i < corners.p.size(); ++i) {
-            cv::line(img_vec[cam_num], corners.p[i], corners.p[i] + 20 * corners.v1[i], cv::Scalar(255, 0, 0), 2);
-            cv::line(img_vec[cam_num], corners.p[i], corners.p[i] + 20 * corners.v2[i], cv::Scalar(0, 255, 0), 2);
-            if(!corners.v3.empty()) {
-              cv::line(img_vec[cam_num], corners.p[i], corners.p[i] + 20 * corners.v3[i], cv::Scalar(0, 0, 255), 2);
-            }
-            cv::circle(img_vec[cam_num], corners.p[i], 3, cv::Scalar(0, 0, 255), -1);
-            cv::putText(img_vec[cam_num], std::to_string(i), cv::Point2i(corners.p[i].x - 12, corners.p[i].y - 6),
+            cv::putText(img_vec[cam_num], std::to_string(idx), cv::Point2i(c[0] - 12, c[1] - 6),
                         cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
           }
 
@@ -212,8 +157,7 @@ struct AppState {
       spdlog::trace("Finished drawing corners");
     });
   }
-
-
+  
   // Convert from ManagedImage to cv::Mat
   cv::Mat convert(ManagedImage<uint16_t>::Ptr img) {
     // Create a cv::Mat with the appropriate size and data type
