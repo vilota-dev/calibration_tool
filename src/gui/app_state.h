@@ -20,7 +20,8 @@ using namespace basalt;
 
 struct AppState {
   RosbagContainer rosbag_files;
-  int selected; // selected rosbag_file for display
+  size_t selectedRosbag = 0; // selected rosbag_file for display
+  size_t selectedAprilGrid = 0;
   AprilGridContainer aprilgrid_files;
   std::shared_ptr<cbdetect::Params> checkerboard_params;
   std::shared_ptr<vk::CameraParams> recorder_params;
@@ -44,7 +45,6 @@ struct AppState {
     this->checkerboard_params = std::make_shared<cbdetect::Params>(cb_params);
     this->recorder_params = std::make_shared<vk::CameraParams>();
     this->dataset_recorder = std::make_shared<vk::RosbagDatasetRecorder>();
-    this->selected = 0; // for the selected rosbag file
     this->selectedFrame = 0;
     this->immvisionParams = ImmVision::ImageParams();
     this->immvisionParams.RefreshImage = true;
@@ -52,6 +52,11 @@ struct AppState {
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = false; // Prints the shit out.
+
+    // Load the commonly used april grids
+    basalt::AprilGridPtr g1 = std::make_shared<basalt::AprilGrid>(7, 4, 0.0946, 0.3, 0, "16h5");
+    std::vector<basalt::AprilGridPtr> commonGrids = { g1 };
+    this->aprilgrid_files.addFiles(commonGrids);
   };
 
   ~AppState() {
@@ -68,10 +73,12 @@ struct AppState {
       rosbag_files.addFiles(std::vector<std::string>{path});
       spdlog::debug("Size of rosbag_files: {}", rosbag_files.size());
     } else if (path.find(".json") != std::string::npos) {
-      aprilgrid_files.addFiles(std::vector<std::string>{path});
+      spdlog::debug("{}", path);
+      basalt::AprilGridPtr grid = std::make_shared<basalt::AprilGrid>(path);
+      aprilgrid_files.addFiles(std::vector<basalt::AprilGridPtr>{grid});
       spdlog::debug("Size of aprilgrid_files: {}", aprilgrid_files.size());
     } else {
-      std::cerr << "Unknown file type: " << path << std::endl;
+      spdlog::error("Unknown file type: {}", path);
     }
   }
 
@@ -106,12 +113,12 @@ struct AppState {
 
       switch(this->selectedCalibType) {
         case basalt::CalibType::AprilGrid:
-          params = std::make_shared<basalt::AprilGridParams>(this->aprilgrid_files[this->selected]);
-          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selected]);
+          params = std::make_shared<basalt::AprilGridParams>(this->aprilgrid_files[this->selectedAprilGrid]);
+          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
           break;
         case basalt::CalibType::Checkerboard:
           params = std::make_shared<basalt::CheckerboardParams>(this->checkerboard_params);
-          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selected]);
+          calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
         default:
           std::runtime_error("Invalid calibration type selected");
           break;
@@ -130,13 +137,13 @@ struct AppState {
     processing_thread = std::make_shared<std::thread>([this]() {
       spdlog::trace("Started drawing corners");
 
-      for (auto ts: this->rosbag_files[this->selected]->get_image_timestamps()) {
+      for (auto ts: this->rosbag_files[this->selectedRosbag]->get_image_timestamps()) {
         spdlog::trace("Drawing corners for timestamp: {}", ts);
-        std::vector<cv::Mat> &img_vec = this->rosbag_files[this->selected]->image_data.at(ts);
+        std::vector<cv::Mat> &img_vec = this->rosbag_files[this->selectedRosbag]->image_data.at(ts);
 
-        for (int cam_num = 0; cam_num < this->rosbag_files[this->selected]->get_num_cams(); cam_num++) {
+        for (int cam_num = 0; cam_num < this->rosbag_files[this->selectedRosbag]->get_num_cams(); cam_num++) {
           auto tcid = basalt::TimeCamId(ts, cam_num);
-          const CalibCornerData &cr = this->rosbag_files[this->selected]->calib_corners.at(tcid);
+          const CalibCornerData &cr = this->rosbag_files[this->selectedRosbag]->calib_corners.at(tcid);
 //          const CalibCornerData &cr_rej = this->rosbag_files[this->selected]->calib_corners_rejected.at(tcid);
 
           for (size_t i = 0; i < cr.corners.size(); i++) {
@@ -157,7 +164,7 @@ struct AppState {
       spdlog::trace("Finished drawing corners");
     });
   }
-  
+
   // Convert from ManagedImage to cv::Mat
   cv::Mat convert(ManagedImage<uint16_t>::Ptr img) {
     // Create a cv::Mat with the appropriate size and data type
@@ -175,23 +182,4 @@ struct AppState {
 
     return img_color;
   }
-
-//  void drawImageOverlay(cv::Mat image) {
-//    int64_t timestamp_ns = this->rosbag_io.get()->get_image_timestamps()[0];
-//    TimeCamId tcid(timestamp_ns, 0);
-//
-//    const CalibCornerData &cr = calib_corners.at(tcid);
-//    const CalibCornerData &cr_rej = calib_corners_rejected.at(tcid);
-//
-//    for (size_t i = 0; i < cr.corners.size(); i++) {
-//      // The radius is the threshold used for maximum displacement.
-//      // The search region is slightly larger.
-//      const float radius = static_cast<float>(cr.radii[i]);
-//      const Eigen::Vector2d &c = cr.corners[i];
-//
-//      cv::circle(image, cv::Point2d(c[0], c[1]), static_cast<int>(radius),
-//                 cv::Scalar(0, 255, 0), 1, cv::LINE_AA);
-//
-//    }
-//  }
 };

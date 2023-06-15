@@ -149,12 +149,12 @@ void draw_rosbag_inspector(AppState &app_state) {
   if (ImGui::Begin("ROS .bag Inspector", nullptr)) {
     static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
 
-    app_state.selected = draw_files_left_panel(0, app_state.rosbag_files, app_state.num_topics_to_show);
+    app_state.selectedRosbag = draw_files_left_panel(0, app_state.rosbag_files, app_state.num_topics_to_show);
 
     ImGui::SameLine();
 
     if (app_state.rosbag_files.size() > 0) {
-      draw_bag_content(app_state.rosbag_files[app_state.selected], 0);
+      draw_bag_content(app_state.rosbag_files[app_state.selectedRosbag], 0);
     }
 
 
