@@ -71,7 +71,7 @@ namespace basalt {
             for(const auto & i : cv_corners) {
                 this->corners.emplace_back(i.x, i.y);
                 this->corner_ids.push_back(idx++);
-                this->radii.push_back(0.0);
+                this->radii.push_back(6.0); // NEED CHANGE THIS!!
             }
         }
     };
