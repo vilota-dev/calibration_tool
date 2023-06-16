@@ -1,8 +1,10 @@
+#pragma once
+
 #include "gui/imports.h"
 #include "libcbdetect/config.h"
 
-void draw_checkerboard_config(AppState &app_state, std::shared_ptr<cbdetect::Params> &params) {
-    if (!ImGui::Begin("Calibration Settings")) {
+void corner_detection_config(AppState &app_state, std::shared_ptr<cbdetect::Params> &params) {
+    if (!ImGui::Begin("Corner Detection Config")) {
         ImGui::End();
         return;
     }
