@@ -5,7 +5,7 @@
 void draw_recorder_config(std::shared_ptr<vk::RosbagDatasetRecorder> &dataset_recorder,
                           std::shared_ptr<vk::CameraParams>& recorder_params,
                           std::shared_ptr<std::vector<cv::Mat>> &display_imgs) {
-    if (!ImGui::Begin("Calibration Dataset Recorder Configuration")) {
+    if (!ImGui::Begin("Recorder Config")) {
         ImGui::End();
         return;
     }
@@ -30,16 +30,23 @@ void draw_recorder_config(std::shared_ptr<vk::RosbagDatasetRecorder> &dataset_re
         ImGui::EndCombo();
     }
 
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.4f, 0.2f, 1.0f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.6f, 0.2f, 1.0f});
     if (ImGui::Button("Start Recording")) {
         dataset_recorder->init(*recorder_params, selectedMode, display_imgs);
         dataset_recorder->start_record();
     }
+    ImGui::PopStyleColor(2);
 
     ImGui::SameLine();
 
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.4f, 0.2f, 0.2f, 1.0f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.6f, 0.2f, 0.2f, 1.0f});
     if (ImGui::Button("Stop Recording")) {
         dataset_recorder->stop_record();
     }
+    ImGui::PopStyleColor(2);
+
     ImGui::Text("Messages recorded: %i", dataset_recorder->get_num_snapshots());
 
     if (dataset_recorder->is_running() && dataset_recorder->get_mode() == vk::RecordMode::SNAPSHOTS) {

@@ -3,7 +3,7 @@
 #include "io/dataset_io.h"
 #include "gui/widgets/rosbag_inspector.h"
 #include "gui/widgets/img_display.h"
-#include "gui/widgets/checkerboard_config.h"
+#include "gui/widgets/corner_detection_config.h"
 #include "gui/widgets/recorder_config.hpp"
 #include "gui/widgets/live_view.hpp"
 #include "libcbdetect/boards_from_corners.h"
@@ -13,7 +13,6 @@
 #include "libcbdetect/plot_corners.h"
 #include <chrono>
 #include <opencv2/opencv.hpp>
-#include <vector>
 
 #include "spdlog/spdlog.h"
 #include <nfd.hpp>
@@ -21,6 +20,7 @@
 #include <cstdio>
 #include <filesystem>
 #include <cstdlib>
+#include <vector>
 
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
@@ -29,6 +29,10 @@
 
 void draw_main_menu_bar(AppState &app_state) {
   ImGui::BeginMainMenuBar();
+
+  // Make color dark grey
+  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
+  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
   if (ImGui::SmallButton("Load ROS .bag file")) {
     NFD::Guard nfdGuard;
     NFD::UniquePath outPath;
@@ -59,6 +63,8 @@ void draw_main_menu_bar(AppState &app_state) {
       spdlog::error("Error: {}", NFD_GetError());
     }
   }
+
+  ImGui::PopStyleColor(2);
   ImGui::EndMainMenuBar();
 }
 
@@ -153,7 +159,7 @@ void run_gui() {
 
     draw_main_menu_bar(app_state);
     draw_rosbag_inspector(app_state);
-    draw_checkerboard_config(app_state, app_state.checkerboard_params);
+    corner_detection_config(app_state, app_state.checkerboard_params);
     draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
     draw_live_view(app_state.display_imgs);
     if (app_state.rosbag_files.size() > 0) {
