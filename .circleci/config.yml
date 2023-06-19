@@ -29,10 +29,40 @@ commands:
           key: *capnproto-cache
           paths:
             - ~/git/capnproto
+  build_opencv:
+    steps:
+      - restore_cache:
+          key: &opencv-cache opencv-cache-{{ .Environment.CACHE_VERSION }}-{{ .Environment.MACHINE_OS }}-{{ .Environment.MACHINE_ARCH }}-{{ .Environment.OPENCV_COMMIT }}
+      - run:
+          name: Check if OpenCV already exist
+          command: |
+            DIR=~/git/opencv
+            if [[ -d "$DIR" ]]
+            then
+                echo "$DIR exists on your filesystem."
+                circleci-agent step halt
+            fi
+      - run:
+          name: Install OpenCV 4.x dependency
+          command: |
+            wget -O opencv.zip https://github.com/opencv/opencv/archive/4.x.zip
+            unzip opencv.zip
+            mv opencv-4.x opencv
+            cd opencv
+            mkdir -p build && cd build
+            cmake ..
+            make -j4
+            sudo make install
+      - save_cache:
+          key: *opencv-cache
+          paths:
+            - ~/git/opencv
   build_calibration_tool:
     steps:
       - restore_cache:
           key: *capnproto-cache
+      - restore_cache:
+            key: *opencv-cache
       - run:
           name: Install Capnproto
           command: |
@@ -54,7 +84,7 @@ commands:
           name: Install Dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y cmake libopencv-dev libglfw3-dev libgtk-3-dev libboost-all-dev libeigen3-dev liblz4-dev bzip2
+            sudo apt-get install -y cmake libglfw3-dev libgtk-3-dev libboost-all-dev libeigen3-dev liblz4-dev bzip2
       - run:
           name: Build calibration_tool
           command: |
@@ -103,6 +133,11 @@ workflows:
           context:
             - amd64
             - ubuntu2004
+      - build-opencv:
+          os: ubuntu2004-amd64
+          context:
+            - amd64
+            - ubuntu2004
       - build-calibration-tool:
           os: ubuntu2004-amd64
           context:
@@ -110,6 +145,7 @@ workflows:
             - ubuntu2004
           requires:
             - build-capnproto
+            - build-opencv
   ubuntu2204-amd64:
     jobs:
       - build-capnproto:
@@ -117,6 +153,11 @@ workflows:
           context:
             - amd64
             - ubuntu2204
+      - build-opencv:
+          os: ubuntu2204-amd64
+          context:
+            - amd64
+            - ubuntu2204
       - build-calibration-tool:
           os: ubuntu2204-amd64
           context:
@@ -124,6 +165,7 @@ workflows:
             - ubuntu2204
           requires:
             - build-capnproto
+            - build-opencv
   ubuntu2004-arm64:
     jobs:
       - build-capnproto:
@@ -131,6 +173,11 @@ workflows:
           context:
             - arm64
             - ubuntu2004
+      - build-opencv:
+          os: ubuntu2004-arm64
+          context:
+            - arm64
+            - ubuntu2004
       - build-calibration-tool:
           os: ubuntu2004-arm64
           context:
@@ -138,9 +185,15 @@ workflows:
             - ubuntu2004
           requires:
             - build-capnproto
+            - build-opencv
   ubuntu2204-arm64:
     jobs:
       - build-capnproto:
+          os: ubuntu2204-arm64
+          context:
+            - arm64
+            - ubuntu2204
+      - build-opencv:
           os: ubuntu2204-arm64
           context:
             - arm64
@@ -152,6 +205,7 @@ workflows:
             - ubuntu2204
           requires:
             - build-capnproto
+            - build-opencv
 
 jobs:
   build-capnproto:
@@ -161,6 +215,13 @@ jobs:
     executor: << parameters.os >>
     steps:
       - build_capnproto
+  build-opencv:
+    parameters:
+      os:
+        type: executor
+    executor: << parameters.os >>
+    steps:
+      - build_opencv
   build-calibration-tool:
     parameters:
       os:
