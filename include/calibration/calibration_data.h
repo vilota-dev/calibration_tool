@@ -95,9 +95,6 @@ namespace basalt {
     using CalibCornerMap = tbb::concurrent_unordered_map<TimeCamId, CalibCornerData,
                                                          std::hash<TimeCamId>>;
 
-    using CheckerboardCornerMap = tbb::concurrent_unordered_map<TimeCamId, cbdetect::Corner,
-                                                                std::hash<TimeCamId>>;
-
     using CalibInitPoseMap =
             tbb::concurrent_unordered_map<TimeCamId, CalibInitPoseData,
                                           std::hash<TimeCamId>>;

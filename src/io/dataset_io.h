@@ -174,9 +174,7 @@ namespace basalt {
     // doesn't matter.
     CalibCornerMap calib_corners;
     CalibCornerMap calib_corners_rejected;
-
-    // For checkerboard
-    CheckerboardCornerMap checkerboard_corners; // Eventually merge the two corner types, ez serialisation
+    CalibInitPoseMap calib_init_poses;
 
     std::map<int64_t, std::vector<cv::Mat>> image_data; // corners will be drawn into memory for now
 
