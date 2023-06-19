@@ -20,7 +20,7 @@ set(GUI_SOURCES
 
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
-find_package(OpenCV 4.7 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_library(gui SHARED ${GUI_SOURCES})
 
