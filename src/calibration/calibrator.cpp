@@ -35,7 +35,9 @@ namespace basalt {
         bool patternfound = findChessboardCornersSB(gray8, this->pattern_size, corners, cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY);
 
         if (patternfound) {
-            // cornerSubPix(gray8, corners, cv::Size(5,5), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 40, 0.001));
+            if (this->enableSubpixRefine) {
+                cornerSubPix(gray8, corners, cv::Size(5,5), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 40, 0.001));
+            }
 
             float diff = corners[0].x - corners[this->pattern_size.width - 1].x;
 
