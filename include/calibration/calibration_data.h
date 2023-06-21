@@ -18,7 +18,18 @@ namespace basalt {
         AprilGrid
     };
 
-    struct OpenCVParams {
+    class OpenCVParams {
+    public:
+        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage,
+                     bool filterQuads, bool fastCheck, bool enableSubpixRefine)
+            : width(width),
+              height(height),
+              adaptiveThresh(adaptiveThresh),
+              normalizeImage(normalizeImage),
+              filterQuads(filterQuads),
+              fastCheck(fastCheck),
+              enableSubpixRefine(enableSubpixRefine) {}
+
         int width;
         int height;
         bool adaptiveThresh;
@@ -26,16 +37,8 @@ namespace basalt {
         bool filterQuads;
         bool fastCheck;
         bool enableSubpixRefine;
-        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage, bool filterQuads, bool fastCheck, bool enableSubpixRefine) {
-            this->width = width;
-            this->height = height;
-            this->adaptiveThresh = adaptiveThresh;
-            this->normalizeImage = normalizeImage;
-            this->filterQuads = filterQuads;
-            this->fastCheck = fastCheck;
-            this->enableSubpixRefine = enableSubpixRefine;
-        }
     };
+
 
     struct CalibCornerData {
         Eigen::aligned_vector<Eigen::Vector2d> corners;
