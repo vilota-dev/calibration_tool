@@ -25,13 +25,15 @@ namespace basalt {
         bool normalizeImage;
         bool filterQuads;
         bool fastCheck;
-        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage, bool filterQuads, bool fastCheck) {
+        bool enableSubpixRefine;
+        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage, bool filterQuads, bool fastCheck, bool enableSubpixRefine) {
             this->width = width;
             this->height = height;
             this->adaptiveThresh = adaptiveThresh;
             this->normalizeImage = normalizeImage;
             this->filterQuads = filterQuads;
             this->fastCheck = fastCheck;
+            this->enableSubpixRefine = enableSubpixRefine;
         }
     };
 
@@ -71,7 +73,7 @@ namespace basalt {
             for(const auto & i : cv_corners) {
                 this->corners.emplace_back(i.x, i.y);
                 this->corner_ids.push_back(idx++);
-                this->radii.push_back(6.0); // NEED CHANGE THIS!!
+                this->radii.push_back(1.0); // NEED CHANGE THIS!!
             }
         }
     };
@@ -148,6 +150,7 @@ namespace basalt {
             this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
             this->flags += params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
             this->flags += params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
+            this->enableSubpixRefine = params.enableSubpixRefine;
         }
 
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
@@ -155,6 +158,7 @@ namespace basalt {
     protected:
         cv::Size pattern_size;
         int flags;
+        bool enableSubpixRefine;
     };
 }// namespace basalt
 
