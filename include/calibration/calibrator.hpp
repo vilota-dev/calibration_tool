@@ -42,11 +42,22 @@ namespace basalt {
     }
 
     inline void saveCache() {
-      std::ofstream os(this->cache_path, std::ios::binary);
-      cereal::BinaryOutputArchive archive(os);
 
-      archive(this->dataset->calib_corners);
-      archive(this->dataset->calib_corners_rejected);
+      {
+        std::ofstream os(this->cache_path, std::ios::binary);
+        cereal::BinaryOutputArchive archive(os);
+
+        archive(this->dataset->calib_corners);
+        archive(this->dataset->calib_corners_rejected);
+      }
+
+      {
+        std::ofstream os(this->cache_path_json, std::ios::binary);
+        cereal::JSONOutputArchive archive(os);
+
+        archive(this->dataset->calib_corners);
+        archive(this->dataset->calib_corners_rejected);
+      }
 
       spdlog::info("Cached detected corners here: {}", this->cache_path.string());
     }
@@ -57,6 +68,6 @@ namespace basalt {
   protected:
     std::shared_ptr<RosbagDataset> dataset;
     std::shared_ptr<CalibParams> params;
-    fs::path cache_path;
+    fs::path cache_path, cache_path_json;
   };
 }

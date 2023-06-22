@@ -68,6 +68,7 @@ namespace basalt {
     Calibrator::Calibrator(const std::shared_ptr<RosbagDataset> &dataset) {
         const fs::path temp = dataset->get_file_path();
         this->cache_path = temp.parent_path() / "calib-cam_detected_corners.cereal";
+        this->cache_path_json = temp.parent_path() / "calib-cam_detected_corners.json";
         this->dataset = dataset;
     }
 
