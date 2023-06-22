@@ -7,7 +7,7 @@ namespace basalt {
                       ccd_bad.corners, ccd_bad.corner_ids, ccd_bad.radii);
     }
 
-    void CheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) {
+    void CBCheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) {
         // Convert img_raw into cv::Mat
         cv::Mat image16(img_raw.h, img_raw.w, CV_16U, img_raw.ptr);
         cv::Mat gray8;;
@@ -32,12 +32,14 @@ namespace basalt {
 
         std::vector<cv::Point2f> corners;
 
-        bool patternfound = findChessboardCornersSB(gray8, this->pattern_size, corners, cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY);
+        auto pattern_size = cv::Size(cv_params.width, cv_params.height);
+
+        bool patternfound = findChessboardCornersSB(gray8, pattern_size, corners, cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY);
 
         if (patternfound) {
             cornerSubPix(gray8, corners, cv::Size(11, 11), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 30, 0.001));
 
-            float diff = corners[0].x - corners[this->pattern_size.width - 1].x;
+            float diff = corners[0].x - corners[pattern_size.width - 1].x;
 
             // We make a heavy assumption about the relative orientation of the camera and the chessboard.
             // Specifically, we assume that the first corner detected is always at the leftmost part of the row,
@@ -65,27 +67,38 @@ namespace basalt {
 
     Calibrator::Calibrator(const std::shared_ptr<RosbagDataset> &dataset) {
         const fs::path temp = dataset->get_file_path();
-        this->cache_path = temp.parent_path() / "calib-cam_detected_corners.cereal";
-        this->cache_path_json = temp.parent_path() / "calib-cam_detected_corners.json";
-        this->dataset = dataset;
+        this->m_cachePath = temp.parent_path() / "calib-cam_detected_corners.cereal";
+        this->m_cachePathJson = temp.parent_path() / "calib-cam_detected_corners.json";
+        this->m_dataset = dataset;
     }
 
 
     void Calibrator::detectCorners(const std::shared_ptr<CalibParams> &params) {
-        if (this->loadCache()) {
+
+
+        // update internal states on calib boards
+
+        // this->m_calibBoardParams = params;
+        // this->m_calibBoardType = params->getTargetType();
+        // spdlog::info("Calibrator to detect corners of type {}", m_calibBoardType);
+
+
+        if (this->loadCache(params)) {
+            // above function would only return true if the cached binary has the correct type of calib params 
+            // (i.e. checkerboard / aprilgrid of the same size and spacing)
             return;
         } else {
             spdlog::trace("No cached corners found, running corner detection");
 
-            this->dataset->calib_corners.clear();
-            this->dataset->calib_corners_rejected.clear();
+            this->m_dataset->calib_corners.clear();
+            this->m_dataset->calib_corners_rejected.clear();
 
             tbb::parallel_for(
-                    tbb::blocked_range<size_t>(0, this->dataset->get_image_timestamps().size()),
+                    tbb::blocked_range<size_t>(0, this->m_dataset->get_image_timestamps().size()),
                     [&](const tbb::blocked_range<size_t> &r) {
                         for (size_t j = r.begin(); j != r.end(); ++j) {
-                            int64_t timestamp_ns = this->dataset->get_image_timestamps()[j];
-                            const std::vector<ImageData> &img_vec = this->dataset->get_image_data(timestamp_ns);
+                            int64_t timestamp_ns = this->m_dataset->get_image_timestamps()[j];
+                            const std::vector<ImageData> &img_vec = this->m_dataset->get_image_data(timestamp_ns);
 
                             for (size_t i = 0; i < img_vec.size(); i++) {
                                 if (img_vec[i].img.get()) {
@@ -102,15 +115,15 @@ namespace basalt {
                                     ccd_good.seq = j;
                                     ccd_bad.seq = j;
 
-                                    this->dataset->calib_corners.emplace(tcid, ccd_good);
-                                    this->dataset->calib_corners_rejected.emplace(tcid, ccd_bad);
+                                    this->m_dataset->calib_corners.emplace(tcid, ccd_good);
+                                    this->m_dataset->calib_corners_rejected.emplace(tcid, ccd_bad);
                                 }
                             }
                         }
                     });
 
             spdlog::debug("Successfully detected corners");
-            this->saveCache();
+            this->saveCache(params);
         }
     };
 }// namespace basalt

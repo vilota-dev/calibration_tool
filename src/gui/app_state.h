@@ -56,11 +56,11 @@ struct AppState {
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = false; // Prints the shit out.
-    this->opencv_checkerboard_params = std::make_shared<basalt::OpenCVParams>(8, 6, true, true, true, true);
+    this->opencv_checkerboard_params = std::shared_ptr<basalt::OpenCVParams>(new basalt::OpenCVParams{8, 6, true, true, true, true});
 
-    basalt::AprilGridPtr g1 = std::make_shared<basalt::AprilGrid>(7, 4, 0.0946, 0.3, 0, "16h5");
-    std::vector<basalt::AprilGridPtr> commonGrids = { g1 };
-    this->aprilgrid_files.addFiles(commonGrids);
+    // basalt::AprilGridPtr g1 = std::make_shared<basalt::AprilGrid>(7, 4, 0.0946, 0.3, 0, "16h5");
+    // std::vector<basalt::AprilGridPtr> commonGrids = { g1 };
+    // this->aprilgrid_files.addFiles(commonGrids);
   };
 
   ~AppState() {
@@ -134,7 +134,7 @@ struct AppState {
           calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
           break;
         case basalt::CalibType::Checkerboard_CBDETECT:
-          params = std::make_shared<basalt::CheckerboardParams>(this->checkerboard_params);
+          params = std::make_shared<basalt::CBCheckerboardParams>(this->checkerboard_params);
           calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
           break;
         case basalt::CalibType::Checkerboard_OpenCV:
