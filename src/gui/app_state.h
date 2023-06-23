@@ -56,7 +56,7 @@ struct AppState {
 
     // Checkerboard params config
     this->checkerboard_params->show_processing = false; // Prints the shit out.
-    this->opencv_checkerboard_params = std::shared_ptr<basalt::OpenCVParams>(new basalt::OpenCVParams{8, 6, true, true, true, true});
+    this->opencv_checkerboard_params = std::make_shared<basalt::OpenCVParams>(8, 6, true, true, true, true, true);
 
     // basalt::AprilGridPtr g1 = std::make_shared<basalt::AprilGrid>(7, 4, 0.0946, 0.3, 0, "16h5");
     // std::vector<basalt::AprilGridPtr> commonGrids = { g1 };
