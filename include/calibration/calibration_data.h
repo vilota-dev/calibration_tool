@@ -117,13 +117,27 @@ namespace basalt {
      * */
         virtual void
         process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) = 0;
+
+        std::string getTargetType() {
+            assert(targetType.empty());
+
+            return targetType;
+        }
+
+    protected:
+        std::string targetType;
     };
 
     class AprilGridParams : public CalibParams {
     public:
         AprilGridParams(const std::shared_ptr<AprilGrid> &april_grid) : ad(april_grid->getTagCols() * april_grid->getTagRows(), april_grid->getTagFamily(), april_grid->getLowId()) {
             this->april_grid = april_grid;
+            targetType = "aprilgrid";
         }
+
+        AprilGridParams() = delete;
+
+        std::shared_ptr<AprilGrid> getParams() {return april_grid;}
 
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
@@ -132,11 +146,16 @@ namespace basalt {
         ApriltagDetector ad;
     };
 
-    class CheckerboardParams : public CalibParams {
+    class CBCheckerboardParams : public CalibParams {
     public:
-        CheckerboardParams(const std::shared_ptr<cbdetect::Params> &cb_params) {
+        CBCheckerboardParams(const std::shared_ptr<cbdetect::Params> &cb_params) {
             this->cb_params = cb_params;
+            targetType = "checkerboard_cb";
         }
+
+        CBCheckerboardParams() = delete;
+
+        std::shared_ptr<cbdetect::Params> getParams() {return cb_params;}
 
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
@@ -147,19 +166,26 @@ namespace basalt {
     class OpenCVCheckerboardParams : public CalibParams {
     public:
         OpenCVCheckerboardParams(OpenCVParams& params) {
-            this->pattern_size = cv::Size(params.width, params.height);
+
+            cv_params = params;
             // Access prams to get flags
             this->flags += params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
             this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
             this->flags += params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
             this->flags += params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
             this->enableSubpixRefine = params.enableSubpixRefine;
+          
+            targetType = "checkerboard_opencv";
         }
+
+        OpenCVCheckerboardParams() = delete;
+
+        OpenCVParams getParams() {return cv_params;}
 
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
     protected:
-        cv::Size pattern_size;
+        OpenCVParams cv_params;
         int flags;
         bool enableSubpixRefine;
     };
