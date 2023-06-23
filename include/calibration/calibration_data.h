@@ -18,22 +18,27 @@ namespace basalt {
         AprilGrid
     };
 
-    struct OpenCVParams {
+    class OpenCVParams {
+    public:
+        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage,
+                     bool filterQuads, bool fastCheck, bool enableSubpixRefine)
+            : width(width),
+              height(height),
+              adaptiveThresh(adaptiveThresh),
+              normalizeImage(normalizeImage),
+              filterQuads(filterQuads),
+              fastCheck(fastCheck),
+              enableSubpixRefine(enableSubpixRefine) {}
+
         int width;
         int height;
         bool adaptiveThresh;
         bool normalizeImage;
         bool filterQuads;
         bool fastCheck;
-        // OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage, bool filterQuads, bool fastCheck) {
-        //     this->width = width;
-        //     this->height = height;
-        //     this->adaptiveThresh = adaptiveThresh;
-        //     this->normalizeImage = normalizeImage;
-        //     this->filterQuads = filterQuads;
-        //     this->fastCheck = fastCheck;
-        // }
+        bool enableSubpixRefine;
     };
+
 
     struct CalibCornerData {
         Eigen::aligned_vector<Eigen::Vector2d> corners;
@@ -71,7 +76,7 @@ namespace basalt {
             for(const auto & i : cv_corners) {
                 this->corners.emplace_back(i.x, i.y);
                 this->corner_ids.push_back(idx++);
-                this->radii.push_back(6.0); // NEED CHANGE THIS!!
+                this->radii.push_back(1.0); // NEED CHANGE THIS!!
             }
         }
     };
@@ -164,11 +169,12 @@ namespace basalt {
 
             cv_params = params;
             // Access prams to get flags
-            this->flags += cv_params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
-            this->flags += cv_params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
-            this->flags += cv_params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
-            this->flags += cv_params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
-
+            this->flags += params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
+            this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
+            this->flags += params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
+            this->flags += params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
+            this->enableSubpixRefine = params.enableSubpixRefine;
+          
             targetType = "checkerboard_opencv";
         }
 
@@ -181,6 +187,7 @@ namespace basalt {
     protected:
         OpenCVParams cv_params;
         int flags;
+        bool enableSubpixRefine;
     };
 }// namespace basalt
 

@@ -84,6 +84,8 @@ void corner_detection_config(AppState &app_state, std::shared_ptr<cbdetect::Para
         ImGui::Checkbox("Normalize Image", &app_state.opencv_checkerboard_params->normalizeImage);
         ImGui::Checkbox("Filter Quads", &app_state.opencv_checkerboard_params->filterQuads);
         ImGui::Checkbox("Fast Check", &app_state.opencv_checkerboard_params->fastCheck);
+
+        ImGui::Checkbox("Enable sub-pixel refinement", &app_state.opencv_checkerboard_params->enableSubpixRefine);
     }
 
     ImGui::End();
