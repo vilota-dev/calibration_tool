@@ -165,9 +165,7 @@ namespace basalt {
 
     class OpenCVCheckerboardParams : public CalibParams {
     public:
-        OpenCVCheckerboardParams(OpenCVParams& params) {
-
-            cv_params = params;
+        OpenCVCheckerboardParams(OpenCVParams& params) : cv_params(params) {
             // Access prams to get flags
             this->flags += params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
             this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
