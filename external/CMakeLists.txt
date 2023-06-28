@@ -12,6 +12,7 @@ set(GUI_SOURCES
         "imgui/imgui_widgets.cpp"
         "imgui/backends/imgui_impl_glfw.cpp"
         "imgui/backends/imgui_impl_opengl3.cpp"
+        "imgui/misc/cpp/imgui_stdlib.cpp"
         "implot/implot.cpp"
         "implot/implot_items.cpp"
         "implot/implot_demo.cpp"
