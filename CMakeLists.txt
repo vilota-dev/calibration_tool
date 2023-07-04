@@ -19,7 +19,7 @@ endif ()
 add_compile_definitions(SOPHUS_USE_BASIC_LOGGING)
 
 # Project submodules
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/ecal-common/cpp/include)
 add_subdirectory("external")
 
@@ -29,7 +29,11 @@ set(SOURCES
         src/app_state.cpp
         src/calibration/calibrator.cpp
         src/recorder/dataset.cpp
-        src/utils/utils.cpp)
+        src/utils/utils.cpp
+        src/ui/window.cpp
+        src/ui/view.cpp
+        src/ui/views/view_corner_detector.cpp
+        src/ui/views/view_recorder.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})
@@ -62,6 +66,5 @@ if(UNIX AND NOT APPLE)
     set(CPACK_PACKAGE_VERSION "1.0.0")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
     set(CPACK_GENERATOR "DEB")
-#    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libtbb-dev")
     include(CPack)
 endif()

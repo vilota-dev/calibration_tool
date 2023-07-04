@@ -27,9 +27,6 @@
 [submodule "basalt-headers"]
 	path = external/basalt-headers
 	url = https://github.com/vilota-dev/basalt-headers
-[submodule "libcbdetect"]
-	path = external/libcbdetect
-	url = https://github.com/vilota-dev/libcbdetect
 [submodule "ecal-common"]
 	path = external/ecal-common
 	url = https://github.com/vilota-dev/ecal-common/

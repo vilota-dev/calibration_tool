@@ -40,7 +40,6 @@ target_link_libraries(gui PUBLIC glfw OpenGL::GL ${OpenCV_LIBS})
 add_subdirectory("nativefiledialog_extended")
 add_subdirectory("ros")
 add_subdirectory("apriltag")
-add_subdirectory("libcbdetect")
 add_subdirectory(spdlog)
 find_package(TBB REQUIRED)
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX}) # Link capnproto statically
@@ -58,7 +57,6 @@ target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/apriltag/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/ros"
         "${OpenCV_INCLUDE_DIRS}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include"
         )
