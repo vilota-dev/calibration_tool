@@ -2,6 +2,7 @@
 
 #include "calibration/calibrator.hpp"
 #include "io/rosbag_container.h"
+#include "io/aprilgrid_container.h"
 
 #include "BS_thread_pool.hpp"
 
@@ -18,9 +19,7 @@ private:
     AppState() : rosbag_files(), selected_bag(0), thread_pool(std::thread::hardware_concurrency() - 1) {}
     ~AppState() = default;
 
-    RosbagContainer rosbag_files;
     int selected_bag = 0; // selected rosbag_file for display
-
 protected:
     BS::thread_pool thread_pool;
 
@@ -47,6 +46,14 @@ public:
     }
 
     void load_dataset();
+    void load_aprilgrid();
+
+    /*
+     * Made public since we have the [] operator overloaded. No point making a getter. (e.g app_state.get_selected(idx))
+     * is bloated.
+     * */
+    RosbagContainer rosbag_files;
+    AprilGridContainer aprilgrid_files;
 };
 
 
@@ -67,10 +74,6 @@ public:
 //      switch(this->selectedCalibType) {
 //          case basalt::CalibType::AprilGrid:
 //              params = std::make_shared<basalt::AprilGridParams>(this->aprilgrid_files[this->selectedAprilGrid]);
-//              calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
-//              break;
-//          case basalt::CalibType::Checkerboard_CBDETECT:
-//              params = std::make_shared<basalt::CBCheckerboardParams>(this->checkerboard_params);
 //              calibrator = std::make_unique<basalt::Calibrator>(this->rosbag_files[this->selectedRosbag]);
 //              break;
 //          case basalt::CalibType::Checkerboard_OpenCV:
