@@ -104,7 +104,7 @@ namespace basalt {
         // assumes vectors size is num_cams for every timestamp with null pointers for
         // missing frames
         std::unordered_map<int64_t, std::vector<std::optional<rosbag::IndexEntry>>>
-                image_data_idx;
+        image_data_idx;
 
         Eigen::aligned_vector<AccelData> accel_data;
         Eigen::aligned_vector<GyroData> gyro_data;
@@ -115,7 +115,7 @@ namespace basalt {
 
         int64_t mocap_to_imu_offset_ns;
 
-        std::set<std::string> cam_topics;
+        std::vector<std::string> cam_topics;
         std::string imu_topic;
 
     public:
@@ -139,7 +139,7 @@ namespace basalt {
 
         size_t get_num_cams() const { return num_cams; }
 
-        std::set<std::string> get_camera_names() { return cam_topics; }
+        std::vector<std::string> get_camera_names() { return cam_topics; }
 
         std::string get_imu_name() { return imu_topic; }
 
@@ -215,7 +215,7 @@ namespace basalt {
                 //      }
 
                 if (info->datatype == std::string("sensor_msgs/Image")) {
-                    cam_topics.insert(info->topic);
+                    cam_topics.push_back(info->topic);
                 } else if (info->datatype == std::string("sensor_msgs/Imu") &&
                            info->topic.rfind("/fcu", 0) != 0) {
                     imu_topic = info->topic;
@@ -262,8 +262,7 @@ namespace basalt {
 
             for (const rosbag::MessageInstance &m: view) {
                 const std::string &topic = m.getTopic();
-
-                if (cam_topics.find(topic) != cam_topics.end()) {
+                if (std::find(this->cam_topics.begin(), this->cam_topics.end(), topic) != this->cam_topics.end()) {
                     sensor_msgs::ImageConstPtr img_msg =
                             m.instantiate<sensor_msgs::Image>();
                     int64_t timestamp_ns = img_msg->header.stamp.toNSec();
@@ -511,4 +510,3 @@ namespace basalt {
 
     typedef std::shared_ptr<RosbagDataset> RosbagDatasetPtr;
 }  // namespace basalt
-
