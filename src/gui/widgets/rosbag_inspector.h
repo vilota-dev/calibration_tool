@@ -1,18 +1,20 @@
 #pragma once
 
+#include "app_state.hpp"
 #include "utils/utils.h"
-#include "gui/app_state.h"
-#include <string>
 #include <regex>
+#include <string>
 
 #include "imgui.h"
 #include "nfd.h"
 #include "spdlog/spdlog.h"
 #include "utils/colors.h"
 
-int draw_files_left_panel(int flags, RosbagContainer &files, std::map<std::string, uint64_t> num_topics_to_show) {
+int draw_files_left_panel(int flags, RosbagContainer &files) {
   ImGui::BeginChild("Loaded Files", ImVec2(250, 0), true, flags);
   static int selected = 0;
+  static std::map<std::string, uint64_t> num_topics_to_show; // for the rosbag inspector config
+
 
   for (int i = 0; i < files.size(); i++)
   {
@@ -149,7 +151,7 @@ void draw_rosbag_inspector(AppState &app_state) {
   if (ImGui::Begin("ROS .bag Inspector", nullptr)) {
     static nfdfilteritem_t filterItem[1] = {{"ROS .bag file", "bag"}};
 
-    app_state.selectedRosbag = draw_files_left_panel(0, app_state.rosbag_files, app_state.num_topics_to_show);
+    app_state.selectedRosbag = draw_files_left_panel(0, app_state.rosbag_files);
 
     ImGui::SameLine();
 

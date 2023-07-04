@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dataset_io.h"
-#include "utils/utils.h"
+#include "utils/utils.hpp"
 #include "utils/colors.h"
 #include "calibration/aprilgrid.h"
 
