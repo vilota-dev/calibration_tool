@@ -2,8 +2,7 @@
 
 #include "dataset_io.h"
 #include "utils/utils.hpp"
-#include "utils/colors.h"
-#include "calibration/aprilgrid.h"
+#include "calibration/aprilgrid.hpp"
 
 #include <mutex>
 #include <list>
