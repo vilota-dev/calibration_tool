@@ -12,12 +12,6 @@
 #include "opencv2/calib3d.hpp"
 
 namespace basalt {
-    enum class CalibType {
-        Checkerboard_CBDETECT,
-        Checkerboard_OpenCV,
-        AprilGrid
-    };
-
     class OpenCVParams {
     public:
         OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage,
