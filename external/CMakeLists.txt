@@ -74,7 +74,6 @@ target_link_libraries(non_gui INTERFACE
         apriltag
         nfd
         rosbag
-        cbdetect
         pthread
         ecal_camera::ecal_camera
         )
