@@ -1,16 +1,12 @@
 #pragma once
 
 #include "io/dataset_io.h"
-#include "gui/widgets/rosbag_inspector.h"
+//#include "gui/widgets/rosbag_inspector.h"
 #include "gui/widgets/img_display.h"
-#include "gui/widgets/corner_detection_config.h"
-#include "gui/widgets/recorder_config.hpp"
-#include "gui/widgets/live_view.hpp"
-#include "libcbdetect/boards_from_corners.h"
-#include "libcbdetect/config.h"
-#include "libcbdetect/find_corners.h"
-#include "libcbdetect/plot_boards.h"
-#include "libcbdetect/plot_corners.h"
+//#include "gui/widgets/corner_detection_config.h"
+//#include "gui/widgets/recorder_config.hpp"
+//#include "gui/widgets/live_view.hpp"
+#include "app_state.hpp"
 #include <chrono>
 #include <opencv2/opencv.hpp>
 
@@ -27,45 +23,20 @@
 #include <GLES2/gl2.h>
 #endif
 
-void draw_main_menu_bar(AppState &app_state) {
-  ImGui::BeginMainMenuBar();
+void draw_main_menu_bar() {
+    ImGui::BeginMainMenuBar();
 
-  // Make color dark grey
-  ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
-  ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
-  if (ImGui::SmallButton("Load ROS .bag file")) {
-    NFD::Guard nfdGuard;
-    NFD::UniquePath outPath;
-    nfdfilteritem_t bagFilter[1] = {{"ROS .bag file", "bag"}}; // support for png later
-    nfdresult_t result = NFD::OpenDialog(outPath, bagFilter, 1);
-    if (result == NFD_OKAY) {
-        app_state.loadDataset(outPath.get());
-        spdlog::debug("Success! File loaded from {}", outPath.get());
-    } else if (result == NFD_CANCEL) {
-        spdlog::debug("User pressed cancel.");
-    } else {
-        spdlog::error("Error: {}", NFD_GetError());
+    // Make color dark grey
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
+    if (ImGui::SmallButton("Load ROS .bag file")) {
+    AppState::get_instance().load_dataset();
     }
-  }
 
-  ImGui::Separator();
+    ImGui::Separator();
 
-  if (ImGui::SmallButton("Load AprilGrid .json file")) {
-    NFD::Guard nfdGuard;
-    NFD::UniquePath outPath;
-    static nfdfilteritem_t aprilgridFilter[1] = {{"AprilGrid .json file", "json"}}; // support for png later
-    nfdresult_t result = NFD::OpenDialog(outPath, aprilgridFilter, 1);
-    if (result == NFD_OKAY) {
-      app_state.loadDataset(outPath.get());
-    } else if (result == NFD_CANCEL) {
-      spdlog::debug("User pressed cancel.");
-    } else {
-      spdlog::error("Error: {}", NFD_GetError());
-    }
-  }
-
-  ImGui::PopStyleColor(2);
-  ImGui::EndMainMenuBar();
+    ImGui::PopStyleColor(2);
+    ImGui::EndMainMenuBar();
 }
 
 static void glfw_error_callback(int error, const char *description) {
@@ -73,7 +44,6 @@ static void glfw_error_callback(int error, const char *description) {
 }
 
 void run_gui() {
-  AppState app_state;
 
   glfwSetErrorCallback(glfw_error_callback);
   if (!glfwInit()) {
@@ -156,15 +126,16 @@ void run_gui() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     ImGui::DockSpaceOverViewport(ImGui::GetMainViewport()); // Make main window into dockspace
-
-    draw_main_menu_bar(app_state);
-    draw_rosbag_inspector(app_state);
-    corner_detection_config(app_state, app_state.checkerboard_params);
-    draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
-    draw_live_view(app_state.display_imgs);
-    if (app_state.rosbag_files.size() > 0) {
-      img_display(app_state.immvisionParams, app_state);
-    }
+    
+//    draw_main_menu_bar(app_state);
+//    draw_rosbag_inspector(app_state);
+    draw_corner_detection();
+//    corner_detection_config(app_state, app_state.checkerboard_params);
+//    draw_recorder_config(app_state.dataset_recorder, app_state.recorder_params, app_state.display_imgs);
+//    draw_live_view(app_state.display_imgs);
+//    if (app_state.rosbag_files.size() > 0) {
+//      img_display(app_state.immvisionParams, app_state);
+//    }
 
     // Rendering
     ImGui::Render();
