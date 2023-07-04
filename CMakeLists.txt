@@ -24,7 +24,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/external/ecal-common/cpp/include
 add_subdirectory("external")
 
 # Add source files
-set(SOURCES src/main.cpp src/calibration/calibrator.cpp src/recorder/dataset.cpp)
+set(SOURCES
+        src/main.cpp
+        src/app_state.cpp
+        src/calibration/calibrator.cpp
+        src/recorder/dataset.cpp
+        src/utils/utils.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})

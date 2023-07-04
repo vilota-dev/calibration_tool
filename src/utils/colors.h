@@ -1,7 +1,7 @@
 #pragma once
 
 #include "imgui.h"
-#include "utils.h"
+#include "utils/utils.hpp"
 
 static const ImVec4 light_blue = from_rgba(0, 174, 239, 255, true); // Light blue color for selected elements such as play button glyph when paused
 static const ImVec4 regular_blue = from_rgba(0, 115, 200, 255, true); // Checkbox mark, slider grabber
