@@ -1,15 +1,8 @@
 #pragma once
 
+#include "calibration/calibration_data.hpp"
+
 #include "io/dataset_io.h"
-#include "libcbdetect/config.h"
-#include "libcbdetect/find_corners.h"
-#include "libcbdetect/image_normalization_and_gradients.h"
-#include "libcbdetect/get_init_location.h"
-#include "libcbdetect/plot_corners.h"
-#include "libcbdetect/boards_from_corners.h"
-#include "libcbdetect/filter_corners.h"
-#include "libcbdetect/refine_corners.h"
-#include "libcbdetect/polynomial_fit.h"
 
 #include <spdlog/spdlog.h>
 #include <tbb/concurrent_unordered_map.h>

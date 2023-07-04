@@ -7,24 +7,6 @@ namespace basalt {
                       ccd_bad.corners, ccd_bad.corner_ids, ccd_bad.radii);
     }
 
-    void CBCheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) {
-        // Convert img_raw into cv::Mat
-        cv::Mat image16(img_raw.h, img_raw.w, CV_16U, img_raw.ptr);
-        cv::Mat gray8;;
-        image16.convertTo(gray8, CV_8U, 1.0 / 256.0);
-
-        // Requires intermediate cbdetect::Params struct
-        std::vector<cbdetect::Board> boards;
-        cbdetect::Corner corners;// will be populated for this image
-        cbdetect::find_corners(gray8, corners, *this->cb_params);
-        cbdetect::boards_from_corners(gray8, corners, boards, *this->cb_params);// Does the filtering for us
-
-        if (!boards.empty()) {
-            ccd_good = CalibCornerData(corners, boards);// Assuming you want to use the first board
-                                                        //        ccd_bad = CalibCornerData // Nothing is rejected?
-        }
-    }
-
     void OpenCVCheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, basalt::CalibCornerData &ccd_good, basalt::CalibCornerData &ccd_bad) {
         cv::Mat image16(img_raw.h, img_raw.w, CV_16U, img_raw.ptr);
         cv::Mat gray8;
