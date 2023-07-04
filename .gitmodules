@@ -36,3 +36,6 @@
 [submodule "ros_comm"]
 	path = external/ros/ros_comm
 	url = https://github.com/vilota-dev/ros_comm
+[submodule "thread-pool"]
+	path = external/thread-pool
+	url = https://github.com/bshoshany/thread-pool
