@@ -3,7 +3,10 @@
 #include "spdlog/spdlog.h"
 #include <ecal/msg/capnproto/subscriber.h>
 #include <ecal_camera/CameraFactory.hpp>
+#define private public
 #include <rosbag/bag.h>
+#include <rosbag/view.h>
+#undef private
 #include <utils/enum.h>
 
 #include <atomic>
