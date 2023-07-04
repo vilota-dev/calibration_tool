@@ -29,6 +29,7 @@ set(SOURCES
         src/app_state.cpp
         src/calibration/calibrator.cpp
         src/recorder/dataset.cpp
+        src/recorder/presets.cpp
         src/utils/utils.cpp
         src/ui/window.cpp
         src/ui/view.cpp
