@@ -60,6 +60,7 @@ target_include_directories(non_gui INTERFACE
         "${OpenCV_INCLUDE_DIRS}"
         "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include"
         )
 
 if(NOT TBB_USE_GLIBCXX_VERSION AND UNIX AND NOT APPLE)
