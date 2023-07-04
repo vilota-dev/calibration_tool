@@ -1,18 +1,15 @@
-#pragma once
+#include "utils/utils.hpp"
 
-#include "spdlog/spdlog.h"
-#include "imgui.h"
-
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <iomanip>
-
-struct tmpstringstream {
-  std::ostringstream ss;
-  template<class T> tmpstringstream & operator << (const T & val) { ss << val; return *this; }
-  operator std::string() const { return ss.str(); }
-};
+static void HelpMarker(const char* desc) {
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
+    {
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
 
 inline std::string pretty_time(std::chrono::nanoseconds d)
 {
@@ -57,7 +54,7 @@ void cleanup_logger() {
     spdlog::shutdown();
 }
 
-ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color = false) {
+ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color) {
     auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
     return res;
 }
