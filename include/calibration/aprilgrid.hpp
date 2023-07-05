@@ -10,9 +10,7 @@ namespace basalt {
     struct AprilGrid {
         
         // intended for immediate filling with serialisation archive
-        AprilGrid() {
-
-        }
+        AprilGrid() {};
 
         AprilGrid(const std::string &config_path) {
             std::ifstream is(config_path);

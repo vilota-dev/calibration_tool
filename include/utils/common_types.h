@@ -8,12 +8,12 @@
 
 #include <tbb/concurrent_unordered_map.h>
 
-#include <Eigen/Core>
-#include <Eigen/StdVector>
-#include <sophus/se3.hpp>
+#include "Eigen/Core"
+#include "Eigen/StdVector"
+#include "sophus/se3.hpp"
 
-#include <basalt/utils/hash.h>
-#include <basalt/utils/sophus_utils.hpp>
+#include "basalt/utils/hash.h"
+#include "basalt/utils/sophus_utils.hpp"
 
 namespace basalt {
 
