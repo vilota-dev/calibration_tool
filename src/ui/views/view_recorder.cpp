@@ -7,21 +7,29 @@
 ViewRecorder::ViewRecorder()
     : View("ROS .bag Dataset Recorder"),
     custom_camera(0),
-    selected_mode(vk::RecordMode::SNAPSHOT) {
+    recorder_params(),
+    selected_mode(vk::RecordMode::SNAPSHOT),
+    dataset_recorder(),
+    display_imgs(),
+    display_params() {
     this->display_params.RefreshImage = true;
 }
 
-void ViewRecorder::draw_content() {
-    if (!ImGui::Begin(this->get_name().c_str())) {
-        ImGui::End();
-        return;
-    }
+void ViewRecorder::draw_controls() {
     using namespace vk;
+    ImGui::BeginChild("Recorder Controls", ImVec2(0, 200), true);
 
     ImGui::RadioButton("Preset", &this->custom_camera, 0); ImGui::SameLine();
-    ImGui::RadioButton("Custom", &this->custom_camera, 1);
+    ImGui::RadioButton("Custom", &this->custom_camera, 1); ImGui::SameLine();
 
-    if (this->custom_camera == 0) {
+    // From better-enums documentation: You cannot convert a literal constant such as Channel::Cyan
+    // directly to, for example, a string. You have to prefix it with a "+"
+    int temp_selected = this->selected_mode;
+    ImGui::RadioButton((+RecordMode::SNAPSHOT)._to_string(), &temp_selected, 0); ImGui::SameLine();
+    ImGui::RadioButton((+RecordMode::CONTINUOUS)._to_string(), &temp_selected, 1);
+    this->selected_mode = RecordMode::_from_integral(temp_selected);
+
+    if (!this->custom_camera) {
         std::vector<Preset>& presets = getPresets();
 
         static int preset_current_idx = 0;
@@ -40,7 +48,6 @@ void ViewRecorder::draw_content() {
             }
             ImGui::EndCombo();
         }
-
     } else {
         // Add tf_prefix string input as well as cam_topics
         ImGui::InputText("tf_prefix", &recorder_params.tf_prefix);
@@ -64,16 +71,52 @@ void ViewRecorder::draw_content() {
             }
         }
     }
+    /*
+     * Draw the buttons for starting and stopping the recording
+     * */
+    {
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.4f, 0.2f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.6f, 0.2f, 1.0f});
+        ImVec2 avail = ImGui::GetWindowSize();
+        ImVec2 button_size = ImGui::CalcItemSize(ImVec2{avail.x / 2, 50}, 0.0f, 0.0f);
 
-    ImGui::NewLine(); ImGui::Separator(); ImGui::NewLine();
+        if (ImGui::Button("Start Recording", button_size)) {
+            this->dataset_recorder.init(this->recorder_params, this->selected_mode, this->display_imgs);
+            dataset_recorder.start_record();
+        }
+        ImGui::PopStyleColor(2);
 
-    // From better-enums documentation: You cannot convert a literal constant such as Channel::Cyan
-    // directly to, for example, a string. You have to prefix it with a "+"
-    int temp_selected = this->selected_mode;
-    ImGui::RadioButton((+RecordMode::CONTINUOUS)._to_string(), &temp_selected, 0); ImGui::SameLine();
-    ImGui::RadioButton((+RecordMode::SNAPSHOT)._to_string(), &temp_selected, 1);
-    this->selected_mode = RecordMode::_from_integral(temp_selected);
+        ImGui::SameLine();
 
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.4f, 0.2f, 0.2f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.6f, 0.2f, 0.2f, 1.0f});
+        if (ImGui::Button("Stop Recording", button_size)) {
+            dataset_recorder.stop_record();
+        }
+        ImGui::PopStyleColor(2);
+
+
+        if (dataset_recorder.is_running()) {
+            switch(this->dataset_recorder.get_mode()) {
+                case RecordMode::CONTINUOUS:
+                    ImGui::Text("Recording duration: "); // TODO: Add a timer
+                    break;
+                case RecordMode::SNAPSHOT:
+                    if (ImGui::Button("Take snapshot") || ImGui::IsKeyPressed(ImGuiKey_Space)) {
+                        dataset_recorder.take_snapshot();
+                    } ImGui::SameLine();
+                    ImGui::Text("Messages recorded: %i", dataset_recorder.get_num_snapshots());
+                    break;
+            }
+        }
+    }
+
+
+    ImGui::EndChild();
+}
+
+void ViewRecorder::draw_cam_view() {
+    ImGui::BeginChild("Live Camera View", ImVec2(0, 0), true);
     /*
      * Live view of the cameras
      * */
@@ -101,52 +144,26 @@ void ViewRecorder::draw_content() {
             ImGui::Columns(num_cams);
 
             int idx = 0;
-            for (auto &cam_name : this->recorder_params.camera_topics) {
-                this->display_params.ZoomKey = cam_name;
+            for (auto &cam_name: this->recorder_params.camera_topics) {
+                this->display_params.ZoomKey = cam_name; // fix doesn't change
                 ImmVision::Image(cam_name, display_imgs->at(idx), &this->display_params);
                 ImGui::NextColumn();
                 idx++;
             }
         }
     }
+    ImGui::EndChild();
+}
 
-    /*
-     * Draw the buttons for starting and stopping the recording
-     * */
-    {
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.4f, 0.2f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.6f, 0.2f, 1.0f});
-
-        if (ImGui::Button("Start Recording")) {
-            this->dataset_recorder.init(this->recorder_params, this->selected_mode, this->display_imgs);
-            dataset_recorder.start_record();
-        }
-        ImGui::PopStyleColor(2);
-
-        ImGui::SameLine();
-
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.4f, 0.2f, 0.2f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.6f, 0.2f, 0.2f, 1.0f});
-        if (ImGui::Button("Stop Recording")) {
-            dataset_recorder.stop_record();
-        }
-        ImGui::PopStyleColor(2);
-
-
-        if (dataset_recorder.is_running()) {
-            switch(this->dataset_recorder.get_mode()) {
-                case RecordMode::CONTINUOUS:
-                    ImGui::Text("Recording duration: "); // TODO: Add a timer
-                    break;
-                case RecordMode::SNAPSHOT:
-                    if (ImGui::Button("Take snapshot") || ImGui::IsKeyPressed(ImGuiKey_Space)) {
-                        dataset_recorder.take_snapshot();
-                    } ImGui::SameLine();
-                    ImGui::Text("Messages recorded: %i", dataset_recorder.get_num_snapshots());
-                    break;
-            }
-        }
+void ViewRecorder::draw_content() {
+    if (!ImGui::Begin(this->get_name().c_str())) {
+        ImGui::End();
+        return;
     }
+    using namespace vk;
+
+    this->draw_controls();
+    this->draw_cam_view();
 
     ImGui::End();
 }
