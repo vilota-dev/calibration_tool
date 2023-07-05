@@ -81,7 +81,7 @@ void ViewCornerDetector::draw_content() {
             int idx = 0;
             for (auto &cam_name : rosbag->get_camera_names()) {
                 // Quick hack to ensure each immvision object has a different zoom key without
-                // creating multiple instances of the ImageParams object
+                // creating multiple instances of the ImageParams object (HACK DOESN'T WORK)
                 this->image_params.ZoomKey = cam_name;
                 ImmVision::Image(cam_name, img_to_display[idx], &this->image_params);
                 ImGui::NextColumn();
@@ -93,7 +93,6 @@ void ViewCornerDetector::draw_content() {
 
             if (ImGui::Button("Detect Corners")) {
                 ImGui::OpenPopup("Detection Config");
-                 this->detect_corners(this->detection_type);
             } ImGui::SameLine();
             if (ImGui::Button("Draw Corners")) {
                 spdlog::trace("Starting corner drawing");
@@ -131,19 +130,18 @@ void ViewCornerDetector::draw_popup() {
          * */
         switch (detection_type) {
             case DetectionType::AprilGrid: {
-                static int selected_aprilgrid = 0;
                 if (ImGui::Button("Load AprilGrid")) {
                     app_state.load_aprilgrid();
                 }
                 if (app_state.aprilgrid_files.size() != 0) {
                     ImGui::SameLine();
-                    const char *currentSelection = app_state.aprilgrid_files[selected_aprilgrid]->get_name().c_str();
+                    const char *currentSelection = app_state.aprilgrid_files[this->selected_aprilgrid]->get_name().c_str();
 
                     if (ImGui::BeginCombo("April Grid", currentSelection)) {
                         for (int i = 0; i < app_state.aprilgrid_files.size(); i++) {
                             bool isSelected = (currentSelection == app_state.aprilgrid_files[i]->get_name().c_str());
                             if (ImGui::Selectable(app_state.aprilgrid_files[i]->get_name().c_str(), isSelected)) {
-                                selected_aprilgrid = i;
+                                this->selected_aprilgrid = i;
                             }
                             if (isSelected) {
                                 ImGui::SetItemDefaultFocus();
@@ -152,12 +150,12 @@ void ViewCornerDetector::draw_popup() {
                         ImGui::EndCombo();
                     }
 
-                    ImGui::Text("tagRows: %i", app_state.aprilgrid_files[selected_aprilgrid]->getTagRows());
-                    ImGui::Text("tagCols: %i", app_state.aprilgrid_files[selected_aprilgrid]->getTagCols());
-                    ImGui::Text("tagSize: %f", app_state.aprilgrid_files[selected_aprilgrid]->getTagSize());
-                    ImGui::Text("tagSpacing: %f", app_state.aprilgrid_files[selected_aprilgrid]->getTagSpacing());
-                    ImGui::Text("lowID: %i", app_state.aprilgrid_files[selected_aprilgrid]->getLowId());
-                    ImGui::Text("tagFamily: %s", app_state.aprilgrid_files[selected_aprilgrid]->getTagFamily().c_str());
+                    ImGui::Text("tagRows: %i", app_state.aprilgrid_files[this->selected_aprilgrid]->getTagRows());
+                    ImGui::Text("tagCols: %i", app_state.aprilgrid_files[this->selected_aprilgrid]->getTagCols());
+                    ImGui::Text("tagSize: %f", app_state.aprilgrid_files[this->selected_aprilgrid]->getTagSize());
+                    ImGui::Text("tagSpacing: %f", app_state.aprilgrid_files[this->selected_aprilgrid]->getTagSpacing());
+                    ImGui::Text("lowID: %i", app_state.aprilgrid_files[this->selected_aprilgrid]->getLowId());
+                    ImGui::Text("tagFamily: %s", app_state.aprilgrid_files[this->selected_aprilgrid]->getTagFamily().c_str());
                 }
                 break;
             }
@@ -176,7 +174,7 @@ void ViewCornerDetector::draw_popup() {
         }
 
         if (ImGui::Button("Detect!", ImVec2(120, 0))) {
-//          detect_corners();
+            this->detect_corners();
             ImGui::CloseCurrentPopup();
         }
         ImGui::SetItemDefaultFocus();
@@ -188,17 +186,40 @@ void ViewCornerDetector::draw_popup() {
     }
 }
 
-void ViewCornerDetector::detect_corners(DetectionType detection_type) {
-    spdlog::debug("Detecting corners with {}", detection_type._to_string());
-    switch (detection_type) {
-        case DetectionType::Checkerboard: {
+void ViewCornerDetector::detect_corners() {
+    spdlog::debug("Detecting corners with {} mode", detection_type._to_string());
+
+    switch (this->detection_type) {
+        case DetectionType::AprilGrid: {
+            //NOLINTNEXTLINE
+            AppState::get_instance().submit_task([this]() {
+                auto &app_state = AppState::get_instance();
+                auto params = std::make_shared<basalt::AprilGridParams>(
+                        app_state.aprilgrid_files[this->selected_aprilgrid]);
+                auto calibrator = std::make_unique<basalt::Calibrator>(
+                        app_state.rosbag_files[this->selected_rosbag]);
+
+                calibrator->detectCorners(params);
+            });
             break;
         }
-        case DetectionType::AprilGrid: {
+        case DetectionType::Checkerboard: {
+            //NOLINTNEXTLINE
+            AppState::get_instance().submit_task([this]() {
+                auto &app_state = AppState::get_instance();
+                auto params = std::make_shared<basalt::OpenCVCheckerboardParams>(
+                        this->cb_width, this->cb_height, this->adaptive_thresh, this->normalize_image,
+                        this->filter_quads, this->fast_check, this->enable_subpix_refine);
+                auto calibrator = std::make_unique<basalt::Calibrator>(
+                        app_state.rosbag_files[this->selected_rosbag]);
+
+                calibrator->detectCorners(params);
+            });
             break;
         }
     }
 }
 
 void ViewCornerDetector::draw_corners() {
+
 }
