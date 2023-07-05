@@ -16,6 +16,8 @@ public:
     ~ViewRecorder() override = default;
 
     void draw_content() override;
+    void draw_controls();
+    void draw_cam_view();
 private:
     int custom_camera;
     vk::CameraParams recorder_params;

@@ -17,13 +17,14 @@ public:
 
 private:
     void draw_popup();
-    static void detect_corners(DetectionType detection_type);
+    void detect_corners();
     void draw_corners();
 
     bool show_corners = false;
     bool show_corners_rejected = false;
     int selected_rosbag = 0;
     int selected_frame = 0;
+    int selected_aprilgrid = 0;
 
     // ImmVision Parameters
     ImmVision::ImageParams image_params;
