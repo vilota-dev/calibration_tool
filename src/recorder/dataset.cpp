@@ -52,7 +52,7 @@ namespace vk {
                 }
                 break;
             }
-            case RecordMode::SNAPSHOTS: {
+            case RecordMode::SNAPSHOT: {
                 if (this->m_recording && this->m_take_snapshot) {
                     for (auto &frame: dataVector) {
                         std::string streamName = frame->prefixed_topic;

@@ -1,9 +1,8 @@
 #pragma once
 
-#include "dataset_io.h"
-#include "utils/utils.h"
-#include "utils/colors.h"
-#include "calibration/aprilgrid.h"
+#include "io/dataset_io.h"
+#include "utils/utils.hpp"
+#include "calibration/aprilgrid.hpp"
 
 #include <mutex>
 #include <list>
