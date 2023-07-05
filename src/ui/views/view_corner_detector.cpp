@@ -245,7 +245,6 @@ void ViewCornerDetector::draw_corners() {
         for (auto ts: app_state.rosbag_files[this->selected_rosbag]->get_image_timestamps()) {
             spdlog::trace("Drawing corners for timestamp: {}", ts);
             std::vector<cv::Mat> &img_vec = app_state.rosbag_files[this->selected_rosbag]->image_data.at(ts);
-            spdlog::trace("Doesn't reach here");
 
             for (int cam_num = 0; cam_num < app_state.rosbag_files[this->selected_rosbag]->get_num_cams(); cam_num++) {
                 auto tcid = basalt::TimeCamId(ts, cam_num);
