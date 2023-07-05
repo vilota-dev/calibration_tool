@@ -18,6 +18,70 @@ ViewCornerDetector::ViewCornerDetector() : View("Corner Detector") {
     this->image_params.RefreshImage = true;
 }
 
+void ViewCornerDetector::draw_config() {
+    ImGui::BeginChild("Corner Detector Config", ImVec2(0, 50), true);
+
+    auto &app_state = AppState::get_instance();
+
+    if (ImGui::BeginCombo("ROS .bag Datasets",
+                          app_state.rosbag_files[this->selected_rosbag]->get_file_path().c_str())) {
+        for (int i = 0; i < app_state.rosbag_files.size(); i++) {
+            bool is_selected = (this->selected_rosbag == i);
+            if (ImGui::Selectable(app_state.rosbag_files[i]->get_file_path().c_str(), is_selected)) {
+                this->selected_rosbag = i;
+            }
+            if (is_selected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
+
+    ImGui::Checkbox("Show corners", &this->show_corners); ImGui::SameLine();
+    ImGui::Checkbox("Show corners rejected", &this->show_corners_rejected); ImGui::SameLine();
+
+    if (ImGui::Button("Detect Corners")) {
+        ImGui::OpenPopup("Detection Config");
+    }
+
+    // Open the popup if the button is clicked.
+    this->draw_popup();
+
+    ImGui::EndChild();
+}
+
+void ViewCornerDetector::draw_cam_view() {
+    ImGui::BeginChild("Camera Views", ImVec2(0, 0), true);
+
+    auto &app_state = AppState::get_instance();
+
+    // Get the selected rosbag
+    auto &rosbag = app_state.rosbag_files[this->selected_rosbag];
+
+    // Draw the image slider and ImmVision
+    ImGui::SliderInt("Selected Frame", &selected_frame, 0, rosbag->get_image_timestamps().size() - 1);
+    ImGui::NewLine();
+
+    auto ts = rosbag->get_image_timestamps()[this->selected_frame];
+    auto img_to_display = rosbag->image_data.at(ts);
+
+    auto num_cams = static_cast<int>(rosbag->get_num_cams());
+
+    ImGui::Columns(num_cams);
+
+    int idx = 0;
+    for (auto &cam_name : rosbag->get_camera_names()) {
+        // Quick hack to ensure each immvision object has a different zoom key without
+        // creating multiple instances of the ImageParams object (HACK DOESN'T WORK)
+        this->image_params.ZoomKey = cam_name;
+        ImmVision::Image(cam_name, img_to_display[idx], &this->image_params);
+        ImGui::NextColumn();
+        idx++;
+    }
+
+    ImGui::EndChild();
+}
+
 void ViewCornerDetector::draw_content() {
     if (!ImGui::Begin(this->get_name().c_str())) {
         ImGui::End();
@@ -31,7 +95,7 @@ void ViewCornerDetector::draw_content() {
      * */
     if (app_state.rosbag_files.size() == 0) {
         // Note that 0 tells ImGui to "just use the default"
-        ImVec2 button_size = ImGui::CalcItemSize(ImVec2{300, 0}, 0.0f, 0.0f);
+        ImVec2 button_size = ImGui::CalcItemSize(ImVec2{300, 50}, 0.0f, 0.0f);
 
         ImVec2 avail = ImGui::GetWindowSize();
 
@@ -49,60 +113,9 @@ void ViewCornerDetector::draw_content() {
             app_state.load_dataset();
         }
     } else {
-        if (ImGui::BeginCombo("ROS .bag Datasets",
-                              app_state.rosbag_files[this->selected_rosbag]->get_file_path().c_str())) {
-            for (int i = 0; i < app_state.rosbag_files.size(); i++) {
-                bool is_selected = (this->selected_rosbag == i);
-                if (ImGui::Selectable(app_state.rosbag_files[i]->get_file_path().c_str(), is_selected)) {
-                    this->selected_rosbag = i;
-                }
-                if (is_selected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        {
-            // Get the selected rosbag
-            auto &rosbag = app_state.rosbag_files[this->selected_rosbag];
-
-            // Draw the image slider and ImmVision
-            ImGui::SliderInt("Selected Frame", &selected_frame, 0, rosbag->get_image_timestamps().size() - 1);
-            ImGui::NewLine();
-
-            auto ts = rosbag->get_image_timestamps()[this->selected_frame];
-            auto img_to_display = rosbag->image_data.at(ts);
-
-            auto num_cams = static_cast<int>(rosbag->get_num_cams());
-
-            ImGui::Columns(num_cams);
-
-            int idx = 0;
-            for (auto &cam_name : rosbag->get_camera_names()) {
-                // Quick hack to ensure each immvision object has a different zoom key without
-                // creating multiple instances of the ImageParams object (HACK DOESN'T WORK)
-                this->image_params.ZoomKey = cam_name;
-                ImmVision::Image(cam_name, img_to_display[idx], &this->image_params);
-                ImGui::NextColumn();
-                idx++;
-            }
-
-            ImGui::Checkbox("Show corners", &this->show_corners); ImGui::SameLine();
-            ImGui::Checkbox("Show corners rejected", &this->show_corners_rejected); ImGui::SameLine();
-
-            if (ImGui::Button("Detect Corners")) {
-                ImGui::OpenPopup("Detection Config");
-            } ImGui::SameLine();
-            if (ImGui::Button("Draw Corners")) {
-                spdlog::trace("Starting corner drawing");
-                // this->draw_corners();
-            }
-        }
+        this->draw_config();
+        this->draw_cam_view();
     }
-
-    // Open the popup if the button is clicked.
-    this->draw_popup();
 
     ImGui::End();
 }
@@ -200,6 +213,7 @@ void ViewCornerDetector::detect_corners() {
                         app_state.rosbag_files[this->selected_rosbag]);
 
                 calibrator->detectCorners(params);
+                this->draw_corners();
             });
             break;
         }
@@ -214,12 +228,60 @@ void ViewCornerDetector::detect_corners() {
                         app_state.rosbag_files[this->selected_rosbag]);
 
                 calibrator->detectCorners(params);
+                this->draw_corners();
             });
             break;
         }
     }
+
 }
 
 void ViewCornerDetector::draw_corners() {
+    //NOLINTNEXTLINE
+    AppState::get_instance().submit_task([this]() {
+        spdlog::trace("Started drawing corners");
+        auto &app_state = AppState::get_instance();
 
+        for (auto ts: app_state.rosbag_files[this->selected_rosbag]->get_image_timestamps()) {
+            spdlog::trace("Drawing corners for timestamp: {}", ts);
+            std::vector<cv::Mat> &img_vec = app_state.rosbag_files[this->selected_rosbag]->image_data.at(ts);
+            spdlog::trace("Doesn't reach here");
+
+            for (int cam_num = 0; cam_num < app_state.rosbag_files[this->selected_rosbag]->get_num_cams(); cam_num++) {
+                auto tcid = basalt::TimeCamId(ts, cam_num);
+                const basalt::CalibCornerData &cr = app_state.rosbag_files[this->selected_rosbag]->calib_corners.at(tcid);
+//          const CalibCornerData &cr_rej = this->rosbag_files[this->selected]->calib_corners_rejected.at(tcid);
+
+                for (size_t i = 0; i < cr.corners.size(); i++) {
+                    // The radius is the threshold used for maximum displacement. The search region is slightly larger.
+                    const float radius = static_cast<float>(cr.radii[i]);
+                    const Eigen::Vector2d &c = cr.corners[i];
+                    // Convert to cv::Point2f for opencv drawing
+                    std::vector<cv::Point2f> cv_corners;
+                    for (const auto &corner : cr.corners) {
+                        cv_corners.emplace_back(corner[0], corner[1]);
+                    }
+                    const auto idx = cr.corner_ids[i];
+
+                    switch (this->detection_type) {
+                        case DetectionType::AprilGrid: {
+                            cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),
+                                       cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
+
+                            cv::putText(img_vec[cam_num], std::to_string(idx), cv::Point2i(c[0] - 12, c[1] - 6),
+                                        cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+                            break;
+                        }
+                        case DetectionType::Checkerboard: {
+                            cv::Size size(this->cb_width, this->cb_height);
+                            cv::drawChessboardCorners(img_vec[cam_num], size, cv::Mat(cv_corners), true);
+                            break;
+                        }
+                    }
+                }
+
+            }
+        }
+        spdlog::trace("Finished drawing corners");
+    });
 }
