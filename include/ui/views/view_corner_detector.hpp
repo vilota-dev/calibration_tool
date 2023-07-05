@@ -17,6 +17,9 @@ public:
 
 private:
     void draw_popup();
+    void draw_config();
+    void draw_cam_view();
+
     void detect_corners();
     void draw_corners();
 
