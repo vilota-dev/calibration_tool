@@ -14,12 +14,12 @@ namespace basalt {
 
         std::vector<cv::Point2f> corners;
 
-        auto pattern_size = cv::Size(cv_params.width, cv_params.height);
+        auto pattern_size = cv::Size(this->width, this->height);
 
         bool patternfound = findChessboardCornersSB(gray8, pattern_size, corners, cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY);
 
         if (patternfound) {
-            if (this->enableSubpixRefine) {
+            if (this->enable_subpix_refine) {
                 cornerSubPix(gray8, corners, cv::Size(5,5), cv::Size(-1, -1), cv::TermCriteria(cv::TermCriteria::EPS | cv::TermCriteria::MAX_ITER, 40, 0.001));
             }
 
@@ -58,8 +58,6 @@ namespace basalt {
 
 
     void Calibrator::detectCorners(const std::shared_ptr<CalibParams> &params) {
-
-
         // update internal states on calib boards
 
         // this->m_calibBoardParams = params;
