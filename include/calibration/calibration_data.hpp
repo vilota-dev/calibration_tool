@@ -11,29 +11,6 @@
 #include "opencv2/calib3d.hpp"
 
 namespace basalt {
-    class OpenCVParams {
-    public:
-        OpenCVParams(int width, int height, bool adaptiveThresh, bool normalizeImage,
-                     bool filterQuads, bool fastCheck, bool enableSubpixRefine)
-                : width(width),
-                  height(height),
-                  adaptiveThresh(adaptiveThresh),
-                  normalizeImage(normalizeImage),
-                  filterQuads(filterQuads),
-                  fastCheck(fastCheck),
-                  enableSubpixRefine(enableSubpixRefine) {}
-
-        int width;
-        int height;
-        // Flags
-        bool adaptiveThresh;
-        bool normalizeImage;
-        bool filterQuads;
-        bool fastCheck;
-        bool enableSubpixRefine;
-    };
-
-
     struct CalibCornerData {
         Eigen::aligned_vector<Eigen::Vector2d> corners;
         std::vector<int> corner_ids;
@@ -124,28 +101,32 @@ namespace basalt {
 
     class OpenCVCheckerboardParams : public CalibParams {
     public:
-        OpenCVCheckerboardParams(OpenCVParams &params) : cv_params(params) {
+        OpenCVCheckerboardParams(int width, int height, bool adaptive_thresh, bool normalize_image,
+                                 bool filter_quads, bool fast_check, bool enable_subpix_refine)
+                                 : width(width),
+                                 height(height),
+                                 flags(0),
+                                 enable_subpix_refine(enable_subpix_refine) {
             // Access prams to get flags
-            this->flags += params.adaptiveThresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
-            this->flags += params.filterQuads ? cv::CALIB_CB_FILTER_QUADS : 0;
-            this->flags += params.normalizeImage ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
-            this->flags += params.fastCheck ? cv::CALIB_CB_FAST_CHECK : 0;
-            this->enableSubpixRefine = params.enableSubpixRefine;
+            this->flags += adaptive_thresh ? cv::CALIB_CB_ADAPTIVE_THRESH : 0;
+            this->flags += filter_quads ? cv::CALIB_CB_FILTER_QUADS : 0;
+            this->flags += normalize_image ? cv::CALIB_CB_NORMALIZE_IMAGE : 0;
+            this->flags += fast_check ? cv::CALIB_CB_FAST_CHECK : 0;
+            this->enable_subpix_refine = enable_subpix_refine;
 
             targetType = "checkerboard_opencv";
         }
 
         OpenCVCheckerboardParams() = delete;
 
-        OpenCVParams getParams() { return cv_params; }
-
         void
         process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
     protected:
-        OpenCVParams cv_params;
+        int width;
+        int height;
         int flags;
-        bool enableSubpixRefine;
+        bool enable_subpix_refine;
     };
 }// namespace basalt
 
