@@ -15,6 +15,19 @@ ViewRecorder::ViewRecorder()
     this->display_params.RefreshImage = true;
 }
 
+void ViewRecorder::draw_content() {
+    if (!ImGui::Begin(this->get_name().c_str())) {
+        ImGui::End();
+        return;
+    }
+    using namespace vk;
+
+    this->draw_controls();
+    this->draw_cam_view();
+
+    ImGui::End();
+}
+
 void ViewRecorder::draw_controls() {
     using namespace vk;
     ImGui::BeginChild("Recorder Controls", ImVec2(0, 200), true);
@@ -155,15 +168,3 @@ void ViewRecorder::draw_cam_view() {
     ImGui::EndChild();
 }
 
-void ViewRecorder::draw_content() {
-    if (!ImGui::Begin(this->get_name().c_str())) {
-        ImGui::End();
-        return;
-    }
-    using namespace vk;
-
-    this->draw_controls();
-    this->draw_cam_view();
-
-    ImGui::End();
-}

@@ -4,17 +4,17 @@
 
 #include <imgui.h>
 #include <imgui_internal.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <spdlog/spdlog.h>
+#include "nfd.hpp"
 
-ViewCornerDetector::ViewCornerDetector() : View("Corner Detector") {
-    this->cb_width = 8;
-    this->cb_height = 6;
-    this->adaptive_thresh = true;
-    this->normalize_image = true;
-    this->filter_quads = true;
-    this->fast_check = true;
-    this->enable_subpix_refine = true;
-
+ViewCornerDetector::ViewCornerDetector()
+    : View("Corner Detector"),
+        show_corners(true), show_corners_rejected(false), selected_rosbag(0), selected_frame(0), selected_aprilgrid(0),
+        image_params(ImmVision::ImageParams()), detection_type(DetectionType::Checkerboard),
+        cb_width(8), cb_height(6), cb_row_spacing(0.04f), cb_col_spacing(0.04f),
+        adaptive_thresh(true), normalize_image(true), filter_quads(true), fast_check(true), enable_subpix_refine(true),
+        cam_types(std::vector<std::string>({"pinhole-radtan8", "pinhole-radtan8"})){
     this->image_params.RefreshImage = true;
 }
 
@@ -44,12 +44,108 @@ void ViewCornerDetector::draw_config() {
         ImGui::OpenPopup("Detection Config");
     }
 
+    // TODO: Disable this if detect corners has not been pressed yet.
+    if (ImGui::Button("Launch vk_calibrate")) {
+        ImGui::OpenPopup("vk_calibrate Config");
+    }
+
     // Open the popup if the button is clicked.
-    this->draw_popup();
+    this->draw_detection_popup();
+    this->draw_vkcalibrate_popup();
 
     ImGui::EndChild();
 }
 
+void ViewCornerDetector::draw_vkcalibrate_popup() {
+    if (ImGui::BeginPopupModal("vk_calibrate Config", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+        // TODO: Add better enum for different dataset type
+        auto &app_state = AppState::get_instance();
+        std::string dataset_path = app_state.rosbag_files[this->selected_rosbag]->get_file_path();
+
+        // Open NFD for the folder selection for the result path
+        static std::string result_path;
+        ImGui::InputText("Result Path", &result_path); ImGui::SameLine();
+        if (ImGui::Button("Select Result Path")) {
+            NFD::Guard nfdGuard;
+            NFD::UniquePath outPath;
+            nfdresult_t result = NFD::PickFolder(outPath);
+            if (result == NFD_OKAY) {
+                result_path = outPath.get();
+                spdlog::info("NFD: Picked folder {}", result_path);
+            } else if (result == NFD_CANCEL) {
+                spdlog::info("NFD: User pressed cancel.");
+            } else {
+                spdlog::error("NFD: Error: {}", NFD::GetError());
+            }
+        }
+
+        // User can either choose priors that are preloaded or add their own types
+        static int use_prior = 0;
+        ImGui::RadioButton("Preloaded Priors", &use_prior, 0); ImGui::SameLine();
+        ImGui::RadioButton("Custom", &use_prior, 1);
+
+        if (use_prior == 0) {
+            // Load the json files from /opt/vilota/bin directory
+            static std::vector<std::string> priors;
+            static int selected_prior = 0;
+            // use the get_json_files to load the json files from teh /opt/vilota/bin directory
+            std::string priors_dir = "/opt/vilota/bin/priors/";
+            std::vector<std::string> json_files = get_json_files(priors_dir);
+
+            if (ImGui::BeginCombo("Priors", json_files[selected_prior].c_str())) {
+                for (int i = 0; i < json_files.size(); i++) {
+                    bool is_selected = (selected_prior == i);
+                    if (ImGui::Selectable(json_files[i].c_str(), is_selected)) {
+                        selected_prior = i;
+                    }
+                    if (is_selected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        } else {
+            /*
+             * Allow user to add their own camera types and number of them.
+             * TODO: Change items to support all the models vk_calibrate supports
+             * */
+            const char* items[] = {"pinhole-radtan8", "kb4", "ds"};
+            static int item_current = 0;
+            ImGui::Combo("Camera Type", &item_current, items, IM_ARRAYSIZE(items));
+            ImGui::SameLine();
+            if (ImGui::Button("Add Camera Type")) {
+                this->cam_types.emplace_back(items[item_current]);
+            }
+
+            for (int i = 0; i < cam_types.size(); ++i) {
+                ImGui::Text("%s", cam_types[i].c_str());
+
+                ImGui::SameLine();
+                if (this->cam_types.size() > 1) { // Don't allow zero sized
+                    if (ImGui::SmallButton("x")) {
+                        // Remove the item from the list
+                        cam_types.erase(cam_types.begin() + i);
+                        --i;
+                    }
+                }
+            }
+        }
+
+
+
+        if (ImGui::Button("Launch vk_calibrate", ImVec2(120, 0))) {
+            this->launch_vkcalibrate(dataset_path, result_path, this->cam_types);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+
+        ImGui::EndPopup();
+    }
+}
 void ViewCornerDetector::draw_cam_view() {
     ImGui::BeginChild("Camera Views", ImVec2(0, 0), true);
 
@@ -120,7 +216,7 @@ void ViewCornerDetector::draw_content() {
     ImGui::End();
 }
 
-void ViewCornerDetector::draw_popup() {
+void ViewCornerDetector::draw_detection_popup() {
     auto &app_state = AppState::get_instance();
 
     if (ImGui::BeginPopupModal("Detection Config", NULL, ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -175,7 +271,9 @@ void ViewCornerDetector::draw_popup() {
             case DetectionType::Checkerboard: {
                 ImGui::InputInt("Rows", &this->cb_width);
                 ImGui::InputInt("Cols", &this->cb_height);
-                // Flags
+                ImGui::InputFloat("Row Spacing (in meters)", &this->cb_row_spacing);
+                ImGui::InputFloat("Column Spacing (in meters)", &this->cb_col_spacing);
+
                 ImGui::Checkbox("Adaptive Threshold", &this->adaptive_thresh);
                 ImGui::Checkbox("Normalize Image", &this->normalize_image);
                 ImGui::Checkbox("Filter Quads", &this->filter_quads);
@@ -283,4 +381,27 @@ void ViewCornerDetector::draw_corners() {
         }
         spdlog::trace("Finished drawing corners");
     });
+}
+
+void ViewCornerDetector::launch_vkcalibrate(std::string dataset_path, std::string result_path, std::vector<std::string> cam_types) {
+    // Construct command using stringstream
+    std::stringstream command_stream;
+    command_stream << "/opt/vilota/bin/vk_calibrate";
+    command_stream << " --dataset-path " << dataset_path;
+    command_stream << " --dataset-type bag";
+    command_stream << " --checkerboard /home/tejas/git/vilota-dev/checkerboard_9x7.json";
+    command_stream << " --result-path " << result_path;
+    command_stream << " --cam-types";
+    for (const auto &cam_type : cam_types) {
+        command_stream << " " << cam_type;
+    }
+    std::string command = command_stream.str();
+
+    std::thread t([command] {
+        spdlog::info("Running command on vk_calibrate_thread: {}", command.c_str());
+        int success = std::system(command.c_str());
+        spdlog::info("vk_calibrate launched with exit code: {}", success);
+    });
+
+    t.detach();
 }
