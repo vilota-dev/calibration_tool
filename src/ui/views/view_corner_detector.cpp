@@ -8,13 +8,15 @@
 #include <spdlog/spdlog.h>
 #include "nfd.hpp"
 
+#include <unistd.h>
+
 ViewCornerDetector::ViewCornerDetector()
     : View("Corner Detector"),
         show_corners(true), show_corners_rejected(false), selected_rosbag(0), selected_frame(0), selected_aprilgrid(0),
         image_params(ImmVision::ImageParams()), detection_type(DetectionType::Checkerboard),
         cb_width(8), cb_height(6), cb_row_spacing(0.04f), cb_col_spacing(0.04f),
         adaptive_thresh(true), normalize_image(true), filter_quads(true), fast_check(true), enable_subpix_refine(true),
-        cam_types(std::vector<std::string>({"pinhole-radtan8", "pinhole-radtan8"})){
+        cam_types(std::vector<std::string>({"kb4", "kb4"})){
     this->image_params.RefreshImage = true;
 }
 
@@ -86,17 +88,40 @@ void ViewCornerDetector::draw_vkcalibrate_popup() {
         ImGui::RadioButton("Custom", &use_prior, 1);
 
         if (use_prior == 0) {
+            ImGui::Text("NOT IMPLEMENTED FULLY YET, Please use the custom option");
             // Load the json files from /opt/vilota/bin directory
-            static std::vector<std::string> priors;
-            static int selected_prior = 0;
-            // use the get_json_files to load the json files from teh /opt/vilota/bin directory
-            std::string priors_dir = "/opt/vilota/bin/priors/";
-            std::vector<std::string> json_files = get_json_files(priors_dir);
+            /*
+             * This is the proper code
+             * */
+//            static std::vector<std::string> priors;
+//            static int selected_prior = 0;
+//            // use the get_json_files to load the json files from teh /opt/vilota/bin directory
+//            std::string priors_dir = "/opt/vilota/bin/priors/";
+//            std::vector<std::string> json_files = get_json_files(priors_dir);
+//
+//            if (ImGui::BeginCombo("Priors", json_files[selected_prior].c_str())) {
+//                for (int i = 0; i < json_files.size(); i++) {
+//                    bool is_selected = (selected_prior == i);
+//                    if (ImGui::Selectable(json_files[i].c_str(), is_selected)) {
+//                        selected_prior = i;
+//                    }
+//                    if (is_selected) {
+//                        ImGui::SetItemDefaultFocus();
+//                    }
+//                }
+//                ImGui::EndCombo();
+//            }
 
-            if (ImGui::BeginCombo("Priors", json_files[selected_prior].c_str())) {
-                for (int i = 0; i < json_files.size(); i++) {
+            /*
+             * TODO: This is temporary hacked together code for user to test
+             * Only allows two hardcoded priors, under directory opt/vilota/bin/priors/kb4 and radtan
+             * */
+            static std::vector<std::string> priors = {"kb4", "radtan"};
+            static int selected_prior = 0;
+            if (ImGui::BeginCombo("Priors", priors[selected_prior].c_str())) {
+                for (int i = 0; i < priors.size(); i++) {
                     bool is_selected = (selected_prior == i);
-                    if (ImGui::Selectable(json_files[i].c_str(), is_selected)) {
+                    if (ImGui::Selectable(priors[i].c_str(), is_selected)) {
                         selected_prior = i;
                     }
                     if (is_selected) {
@@ -105,12 +130,13 @@ void ViewCornerDetector::draw_vkcalibrate_popup() {
                 }
                 ImGui::EndCombo();
             }
+
         } else {
             /*
              * Allow user to add their own camera types and number of them.
              * TODO: Change items to support all the models vk_calibrate supports
              * */
-            const char* items[] = {"pinhole-radtan8", "kb4", "ds"};
+            const char* items[] = {"pinhole-radtan8", "kb4"};
             static int item_current = 0;
             ImGui::Combo("Camera Type", &item_current, items, IM_ARRAYSIZE(items));
             ImGui::SameLine();
@@ -132,10 +158,28 @@ void ViewCornerDetector::draw_vkcalibrate_popup() {
             }
         }
 
+        // Open NFD for checkerboard json file
+        // TODO: Remove this once we serialize into the cereal dump
+        static std::string cb_path;
+        ImGui::InputText("Checkerboard .json Path", &cb_path); ImGui::SameLine();
+        if (ImGui::Button("Select cb .json Path")) {
+            NFD::Guard nfdGuard;
+            NFD::UniquePath outPath;
+            nfdfilteritem_t bagFilter[1] = {{"Checkerboard .json file", "json"}}; // support for png later
+            nfdresult_t result = NFD::OpenDialog(outPath, bagFilter, 1);
 
+            if (result == NFD_OKAY) {
+                const std::string path = outPath.get();
+                cb_path = outPath.get();
+            } else if (result == NFD_CANCEL) {
+                spdlog::debug("User pressed cancel.");
+            } else {
+                spdlog::error("File upload failed. Error: {}", NFD_GetError());
+            }
+        }
 
         if (ImGui::Button("Launch vk_calibrate", ImVec2(120, 0))) {
-            this->launch_vkcalibrate(dataset_path, result_path, this->cam_types);
+            this->launch_vkcalibrate(dataset_path, cb_path, result_path, this->cam_types);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SetItemDefaultFocus();
@@ -383,13 +427,14 @@ void ViewCornerDetector::draw_corners() {
     });
 }
 
-void ViewCornerDetector::launch_vkcalibrate(std::string dataset_path, std::string result_path, std::vector<std::string> cam_types) {
+void ViewCornerDetector::launch_vkcalibrate(std::string dataset_path, std::string cb_path,
+                                            std::string result_path, std::vector<std::string> cam_types) {
     // Construct command using stringstream
     std::stringstream command_stream;
     command_stream << "/opt/vilota/bin/vk_calibrate";
     command_stream << " --dataset-path " << dataset_path;
     command_stream << " --dataset-type bag";
-    command_stream << " --checkerboard /home/tejas/git/vilota-dev/checkerboard_9x7.json";
+    command_stream << " --checkerboard " << cb_path;
     command_stream << " --result-path " << result_path;
     command_stream << " --cam-types";
     for (const auto &cam_type : cam_types) {
@@ -397,7 +442,7 @@ void ViewCornerDetector::launch_vkcalibrate(std::string dataset_path, std::strin
     }
     std::string command = command_stream.str();
 
-    std::thread t([command] {
+    std::thread t([command, dataset_path] {
         spdlog::info("Running command on vk_calibrate_thread: {}", command.c_str());
         int success = std::system(command.c_str());
         spdlog::info("vk_calibrate launched with exit code: {}", success);
