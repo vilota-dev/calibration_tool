@@ -57,7 +57,13 @@ set(PRIOR_FILES
         ${CMAKE_SOURCE_DIR}/priors/vk180-prior.json
         ${CMAKE_SOURCE_DIR}/priors/vk180-prior-ds.json
         ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior.json
-        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior-ds.json)
+        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior-ds.json
+        ${CMAKE_SOURCE_DIR}/priors/calibration-prior-kb4.json
+        ${CMAKE_SOURCE_DIR}/priors/calibration-prior-radtan8.json)
+
+# TODO: Temporary, change once vk_calibrate receives prior path directly
+set(KB4_PRIOR ${CMAKE_SOURCE_DIR}/priors/calibration-prior-kb4.json)
+set(RADTAN_PRIOR ${CMAKE_SOURCE_DIR}/priors/calibration-prior-radtan8.json)
 
 # Installs
 if(UNIX AND NOT APPLE)
@@ -70,6 +76,9 @@ if(UNIX AND NOT APPLE)
             )
 
     install(FILES ${PRIOR_FILES} DESTINATION /opt/vilota/bin/priors)
+    # TODO: Remove this once vk_calibrate receives path directly.
+    install(FILES ${KB4_PRIOR} DESTINATION /opt/vilota/bin/priors/kb4)
+    install(FILES ${RADTAN_PRIOR} DESTINATION /opt/vilota/bin/priors/radtan)
 
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
     set(CPACK_PACKAGE_VERSION "1.0.0")
