@@ -1,33 +1,5 @@
 #include "utils/utils.hpp"
-
-static void HelpMarker(const char* desc) {
-    ImGui::TextDisabled("(?)");
-    if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort) && ImGui::BeginTooltip())
-    {
-        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-        ImGui::TextUnformatted(desc);
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-}
-
-inline std::string pretty_time(std::chrono::nanoseconds d)
-{
-  auto hhh = std::chrono::duration_cast<std::chrono::hours>(d);
-  d -= hhh;
-  auto mm = std::chrono::duration_cast<std::chrono::minutes>(d);
-  d -= mm;
-  auto ss = std::chrono::duration_cast<std::chrono::seconds>(d);
-  d -= ss;
-  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(d);
-
-  std::ostringstream stream;
-  stream << std::setfill('0') << std::setw(3) << hhh.count() << ':' <<
-         std::setfill('0') << std::setw(2) << mm.count() << ':' <<
-         std::setfill('0') << std::setw(2) << ss.count() << '.' <<
-         std::setfill('0') << std::setw(3) << ms.count();
-  return stream.str();
-}
+#include <filesystem>
 
 void setup_logger() {
     try {
@@ -57,4 +29,17 @@ void cleanup_logger() {
 ImVec4 from_rgba(uint8_t r, uint8_t g, uint8_t b, uint8_t a, bool consistent_color) {
     auto res = ImVec4(r / (float)255, g / (float)255, b / (float)255, a / (float)255);
     return res;
+}
+
+/*
+ * chatGPT generated. Function to get json files from a directory.
+ * */
+std::vector<std::string> get_json_files(const std::string& directoryPath) {
+    std::vector<std::string> jsonFiles;
+    for (const auto& entry : std::filesystem::directory_iterator(directoryPath)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            jsonFiles.push_back(entry.path().string());
+        }
+    }
+    return jsonFiles;
 }
