@@ -2,6 +2,7 @@
 
 #include "ui/views/view_corner_detector.hpp"
 #include "ui/views/view_recorder.hpp"
+#include "ui/views/view_rosbag_inspector.hpp"
 
 #include <glad/glad.h> // Initialize with gladLoadGL()
 #include <GLFW/glfw3.h>
@@ -38,5 +39,6 @@ namespace vk {
          * */
         ViewCornerDetector view_corner_detector;
         ViewRecorder view_recorder;
+        ViewRosbagInspector view_rosbag_inspector;
     };
 } // namespace vk
