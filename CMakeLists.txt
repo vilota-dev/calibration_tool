@@ -76,7 +76,4 @@ if(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
     set(CPACK_GENERATOR "DEB")
     include(CPack)
-    # Install the desktop entry file TODO: doesn't work
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/calibration_tool.desktop DESTINATION share/applications)
-
 endif()
