@@ -148,9 +148,10 @@ namespace basalt {
           // const auto paramsObjectPtr = std::static_pointer_cast<CBCheckerboardParams>(this->m_calibBoardParams)->getParams();
           // ar(cereal::make_nvp("calib_board_params", *paramsObjectPtr));
         }else if (calibBoardType == "checkerboard_opencv") {
-          throw std::runtime_error("not implemented save serialisation for cv type");
-          // const auto& paramsObject = std::static_pointer_cast<OpenCVCheckerboardParams>(this->m_calibBoardParams)->getParams();
-          // ar(cereal::make_nvp("calib_board_params", paramsObject);
+          const auto& paramsObject = std::static_pointer_cast<OpenCVCheckerboardParams>(params)->getParams();
+
+          ar(cereal::make_nvp("calib_board_params", paramsObject));
+
         }else if (calibBoardType == "aprilgrid") {
           const auto paramsObjectPtr = std::static_pointer_cast<AprilGridParams>(params)->getParams();
           ar(cereal::make_nvp("calib_board_params", *paramsObjectPtr));
