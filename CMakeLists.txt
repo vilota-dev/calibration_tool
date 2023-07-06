@@ -34,7 +34,8 @@ set(SOURCES
         src/ui/window.cpp
         src/ui/view.cpp
         src/ui/views/view_corner_detector.cpp
-        src/ui/views/view_recorder.cpp)
+        src/ui/views/view_recorder.cpp
+        src/ui/views/view_rosbag_inspector.cpp)
 
 # Compile the executable
 add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})
@@ -52,6 +53,11 @@ elseif (UNIX AND NOT APPLE)
     endif()
 endif ()
 
+set(PRIOR_FILES
+        ${CMAKE_SOURCE_DIR}/priors/vk180-prior.json
+        ${CMAKE_SOURCE_DIR}/priors/vk180-prior-ds.json
+        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior.json
+        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior-ds.json)
 
 # Installs
 if(UNIX AND NOT APPLE)
@@ -63,9 +69,14 @@ if(UNIX AND NOT APPLE)
             LIBRARY DESTINATION lib
             )
 
+    install(FILES ${PRIOR_FILES} DESTINATION /opt/vilota/bin/priors)
+
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
     set(CPACK_PACKAGE_VERSION "1.0.0")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
     set(CPACK_GENERATOR "DEB")
     include(CPack)
+    # Install the desktop entry file TODO: doesn't work
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmake/calibration_tool.desktop DESTINATION share/applications)
+
 endif()
