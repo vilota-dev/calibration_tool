@@ -319,7 +319,7 @@ void ViewCornerDetector::detect_corners() {
             //NOLINTNEXTLINE
             AppState::get_instance().submit_task([this]() {
                 auto &app_state = AppState::get_instance();
-                auto params = std::make_shared<basalt::OpenCVCheckerboardParams>(
+                auto params = std::make_shared<basalt::CheckerboardParams>(
                         this->cb_width, this->cb_height, this->adaptive_thresh, this->normalize_image,
                         this->filter_quads, this->fast_check, this->enable_subpix_refine);
                 auto calibrator = std::make_unique<basalt::Calibrator>(

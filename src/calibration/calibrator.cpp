@@ -118,7 +118,7 @@ namespace basalt {
     }
 
 
-    void OpenCVCheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, basalt::CalibCornerData &ccd_good, basalt::CalibCornerData &ccd_bad) {
+    void CheckerboardParams::process(basalt::ManagedImage<uint16_t> &img_raw, basalt::CalibCornerData &ccd_good, basalt::CalibCornerData &ccd_bad) {
         cv::Mat image16(img_raw.h, img_raw.w, CV_16U, img_raw.ptr);
         cv::Mat gray8;
         image16.convertTo(gray8, CV_8U, 1.0 / 256.0);
