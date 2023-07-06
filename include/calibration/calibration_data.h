@@ -19,8 +19,10 @@ namespace basalt {
     };
 
     struct OpenCVParams {
-        int width;
-        int height;
+        int cols;
+        int rows;
+        double squareSpacingCols;
+        double squareSpacingRows;
         bool adaptiveThresh;
         bool normalizeImage;
         bool filterQuads;
@@ -33,6 +35,61 @@ namespace basalt {
         //     this->filterQuads = filterQuads;
         //     this->fastCheck = fastCheck;
         // }
+
+        // internal split/load function
+        // https://uscilab.github.io/cereal/serialization_functions.html
+        template<class Archive>
+        void save(Archive &ar) const{
+            ar(cereal::make_nvp("targetType", std::string("checkerboard"))); // convention https://github.com/ethz-asl/kalibr/wiki/calibration-targets
+            ar(cereal::make_nvp("targetCols", cols));
+            ar(cereal::make_nvp("targetRows", rows));
+            ar(cereal::make_nvp("rowSpacingMeters", squareSpacingRows));
+            ar(cereal::make_nvp("colSpacingMeters", squareSpacingCols));
+        }
+
+        template<class Archive>
+        void load(Archive &ar){
+            std::string targetType; 
+            ar(cereal::make_nvp("targetType", targetType));
+            if (targetType != "checkerboard")
+                throw std::runtime_error("trying to serialise a checkerboard object with non checkerboard targetType");
+
+            ar(cereal::make_nvp("targetType", std::string("checkerboard")));
+            ar(cereal::make_nvp("targetCols", cols));
+            ar(cereal::make_nvp("targetRows", rows));
+            ar(cereal::make_nvp("rowSpacingMeters", squareSpacingRows));
+            ar(cereal::make_nvp("colSpacingMeters", squareSpacingCols));
+        }
+
+        bool operator==(const OpenCVParams& rhs) const{
+            std::stringstream os_lhs, os_rhs;
+
+            // scope the serialisation
+            {
+                cereal::JSONOutputArchive ar_lhs(os_lhs);
+                cereal::JSONOutputArchive ar_rhs(os_rhs);
+
+                // ar_lhs(*this);
+                // ar_rhs(rhs);
+
+                this->save(ar_lhs);
+                rhs.save(ar_rhs);
+            }
+
+            bool matched = (os_lhs.str() == os_rhs.str());
+
+            if (matched) {
+                spdlog::info("checkerboard param matched: \n{}", os_lhs.str());
+                return true;
+            }else {
+                spdlog::info("checkerboard param mismatched \n{}\n---and---\n{}", os_lhs.str(), os_rhs.str());
+                return false;
+            }
+        }
+
+        bool operator!=(const OpenCVParams& rhs) const{
+            return !(*this==rhs);
+        }
     };
 
     struct CalibCornerData {
@@ -137,7 +194,7 @@ namespace basalt {
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
     private:
-        std::shared_ptr<AprilGrid> april_grid;
+        std::shared_ptr<AprilGrid> april_grid; // serialisable object
         ApriltagDetector ad;
     };
 
@@ -179,7 +236,7 @@ namespace basalt {
         void process(basalt::ManagedImage<uint16_t> &img_raw, CalibCornerData &ccd_good, CalibCornerData &ccd_bad) override;
 
     protected:
-        OpenCVParams cv_params;
+        OpenCVParams cv_params; // serialisable object
         int flags;
     };
 }// namespace basalt

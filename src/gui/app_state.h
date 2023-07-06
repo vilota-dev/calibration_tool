@@ -180,7 +180,7 @@ struct AppState {
             const auto idx = cr.corner_ids[i];
 
             if (this->selectedCalibType == basalt::CalibType::Checkerboard_OpenCV) {
-                cv::Size size(this->opencv_checkerboard_params->width, this->opencv_checkerboard_params->height);
+                cv::Size size(this->opencv_checkerboard_params->cols, this->opencv_checkerboard_params->rows);
                 cv::drawChessboardCorners(img_vec[cam_num], size, cv::Mat(cv_corners), true);
             } else {
                 cv::circle(img_vec[cam_num], cv::Point2d(c[0], c[1]), static_cast<int>(radius),

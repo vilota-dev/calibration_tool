@@ -32,7 +32,7 @@ namespace basalt {
 
         std::vector<cv::Point2f> corners;
 
-        auto pattern_size = cv::Size(cv_params.width, cv_params.height);
+        auto pattern_size = cv::Size(cv_params.cols, cv_params.rows);
 
         bool patternfound = findChessboardCornersSB(gray8, pattern_size, corners, cv::CALIB_CB_EXHAUSTIVE | cv::CALIB_CB_ACCURACY);
 

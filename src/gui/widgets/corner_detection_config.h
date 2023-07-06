@@ -77,8 +77,8 @@ void corner_detection_config(AppState &app_state, std::shared_ptr<cbdetect::Para
             ImGui::EndCombo();
         }
     } else if (app_state.selectedCalibType == CalibType::Checkerboard_OpenCV) {
-        ImGui::InputInt("Rows", &app_state.opencv_checkerboard_params->width);
-        ImGui::InputInt("Cols", &app_state.opencv_checkerboard_params->height);
+        ImGui::InputInt("Rows", &app_state.opencv_checkerboard_params->rows);
+        ImGui::InputInt("Cols", &app_state.opencv_checkerboard_params->cols);
 
         ImGui::Checkbox("Adaptive Threshold", &app_state.opencv_checkerboard_params->adaptiveThresh);
         ImGui::Checkbox("Normalize Image", &app_state.opencv_checkerboard_params->normalizeImage);
