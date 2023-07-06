@@ -25,8 +25,8 @@ private:
 
     void detect_corners();
     void draw_corners();
-    void launch_vkcalibrate(std::string dataset_path, std::string result_path, std::vector<std::string> cam_types);
-
+    void launch_vkcalibrate(std::string dataset_path, std::string cb_path,
+                                                std::string result_path, std::vector<std::string> cam_types);
     bool show_corners = false;
     bool show_corners_rejected = false;
     int selected_rosbag = 0;
