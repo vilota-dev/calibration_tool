@@ -16,12 +16,12 @@ ViewCornerDetector::ViewCornerDetector()
         image_params(ImmVision::ImageParams()), detection_type(DetectionType::Checkerboard),
         cb_width(8), cb_height(6), cb_row_spacing(0.04f), cb_col_spacing(0.04f),
         adaptive_thresh(true), normalize_image(true), filter_quads(true), fast_check(true), enable_subpix_refine(true),
-        cam_types(std::vector<std::string>({"kb4", "kb4"})){
+        cam_types(std::vector<std::string>({"pinhole-radtan8", "pinhole-radtan8"})){
     this->image_params.RefreshImage = true;
 }
 
 void ViewCornerDetector::draw_config() {
-    ImGui::BeginChild("Corner Detector Config", ImVec2(0, 50), true);
+    ImGui::BeginChild("Corner Detector Config", ImVec2(0, 100), true);
 
     auto &app_state = AppState::get_instance();
 
@@ -83,7 +83,7 @@ void ViewCornerDetector::draw_vkcalibrate_popup() {
         }
 
         // User can either choose priors that are preloaded or add their own types
-        static int use_prior = 0;
+        static int use_prior = 1;
         ImGui::RadioButton("Preloaded Priors", &use_prior, 0); ImGui::SameLine();
         ImGui::RadioButton("Custom", &use_prior, 1);
 
