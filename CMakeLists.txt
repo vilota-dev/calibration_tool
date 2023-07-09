@@ -81,7 +81,7 @@ if(UNIX AND NOT APPLE)
     install(FILES ${RADTAN_PRIOR} DESTINATION /opt/vilota/bin/priors/radtan)
 
     set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-    set(CPACK_PACKAGE_VERSION "1.0.0")
+    set(CPACK_PACKAGE_VERSION "1.1.0")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
     set(CPACK_GENERATOR "DEB")
     include(CPack)
