@@ -57,7 +57,7 @@ namespace vk {
         // Render views
         // TODO: Move to ContentRegistry and call get_entries() to get the list of views to render in a loop
         this->view_corner_detector.draw_content();
-#ifndef HUAWEI
+#ifndef HWSG
         this->view_recorder.draw_content();
         this->view_rosbag_inspector.draw_content();
 #endif
