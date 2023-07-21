@@ -34,14 +34,6 @@ commands:
       - restore_cache:
           key: *capnproto-cache
       - run:
-          name: Set CMAKE build options based on branch
-          command: |
-            if [ "${CIRCLE_BRANCH}" = "hwsg_working" ]; then
-              export BUILD_OPTIONS="-DHUAWEI=ON"
-            else
-              export BUILD_OPTIONS=""
-            fi
-      - run:
           name: Install Capnproto
           command: |
             cd capnproto/c++
@@ -67,7 +59,7 @@ commands:
           name: Build calibration_tool
           command: |
               cd calibration_tool
-              cmake -S. -Bbuild ${BUILD_OPTIONS}
+              cmake -S. -Bbuild
               cmake --build build -j2
               cd build
               cpack
