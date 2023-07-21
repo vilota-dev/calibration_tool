@@ -15,11 +15,11 @@ if(LSB_RELEASE_PROGRAM)
         OUTPUT_STRIP_TRAILING_WHITESPACE)
 
     if(${LSB_RELEASE_ID_SHORT} EQUAL "20.04")
-        set(DEBIAN_DEPENDS "libtbb2, libopencv-core4.2, libopencv-imgproc4.2, libopencv-calib3d4.2, libusb-1.0-0-dev, ecal (>= ${eCAL_VERSION})")
+        set(DEBIAN_DEPENDS "libtbb2, libopencv-core4.2, libopencv-imgproc4.2, libopencv-calib3d4.2")
     endif()
 
     if(${LSB_RELEASE_ID_SHORT} EQUAL "22.04")
-        set(DEBIAN_DEPENDS "libtbb2, libopencv-core4.5d, libopencv-imgproc4.5d, libopencv-calib3d4.5d, libusb-1.0-0-dev, ecal (>= ${eCAL_VERSION})")
+        set(DEBIAN_DEPENDS "libtbb2, libopencv-core4.5d, libopencv-imgproc4.5d, libopencv-calib3d4.5d")
     endif()
 
 endif(LSB_RELEASE_PROGRAM)
