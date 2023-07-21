@@ -3,7 +3,11 @@
 #include "spdlog/spdlog.h"
 #include <ecal/msg/capnproto/subscriber.h>
 #include <ecal_camera/CameraFactory.hpp>
+#define private public
 #include <rosbag/bag.h>
+#include <rosbag/view.h>
+#undef private
+#include <utils/enum.h>
 
 #include <atomic>
 #include <chrono>
@@ -14,10 +18,8 @@
 #include <thread>
 
 namespace vk {
-    enum class RecordMode {
-        CONTINUOUS = 1,
-        SNAPSHOTS = 2
-    };
+    // NOLINTNEXTLINE
+    BETTER_ENUM(RecordMode, int, SNAPSHOT = 0, CONTINUOUS = 1)
 
     class RosbagDatasetRecorder {
     public:
@@ -40,9 +42,8 @@ namespace vk {
                 std::time_t now_c = std::chrono::system_clock::to_time_t(now);
 
                 oss << std::put_time(std::localtime(&now_c), "%Y-%m-%d-%I-%M-%S");
-                std::string mode_type = this->m_mode == RecordMode::SNAPSHOTS ? "snapshot" : "continuous";
 
-                this->m_bag_name = oss.str() + mode_type + "_recording.bag";
+                this->m_bag_name = oss.str() + this->m_mode._to_string() + "_recording.bag";
 
                 this->m_bag = std::make_shared<rosbag::Bag>();
                 this->m_bag->open(this->m_bag_name, rosbag::bagmode::Write);
@@ -61,7 +62,7 @@ namespace vk {
 
     private:
         bool m_initialised;// Set to true after callback is passed
-        RecordMode m_mode;
+        RecordMode m_mode = RecordMode::SNAPSHOT;
         vk::CameraInterface::Ptr m_camera;
 
         std::string m_bag_name;
