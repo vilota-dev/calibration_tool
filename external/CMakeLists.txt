@@ -12,6 +12,7 @@ set(GUI_SOURCES
         "imgui/imgui_widgets.cpp"
         "imgui/backends/imgui_impl_glfw.cpp"
         "imgui/backends/imgui_impl_opengl3.cpp"
+        "imgui/misc/cpp/imgui_stdlib.cpp"
         "implot/implot.cpp"
         "implot/implot_items.cpp"
         "implot/implot_demo.cpp"
@@ -39,9 +40,9 @@ target_link_libraries(gui PUBLIC glfw OpenGL::GL ${OpenCV_LIBS})
 add_subdirectory("nativefiledialog_extended")
 add_subdirectory("ros")
 add_subdirectory("apriltag")
-add_subdirectory("libcbdetect")
 add_subdirectory(spdlog)
 find_package(TBB REQUIRED)
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX}) # Link capnproto statically
 add_subdirectory("ecal-common/cpp")
 
 add_library(non_gui INTERFACE)
@@ -56,8 +57,8 @@ target_include_directories(non_gui INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}/apriltag/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/ros"
         "${OpenCV_INCLUDE_DIRS}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/libcbdetect/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include"
         )
 
 if(NOT TBB_USE_GLIBCXX_VERSION AND UNIX AND NOT APPLE)
@@ -73,7 +74,6 @@ target_link_libraries(non_gui INTERFACE
         apriltag
         nfd
         rosbag
-        cbdetect
         pthread
         ecal_camera::ecal_camera
         )
