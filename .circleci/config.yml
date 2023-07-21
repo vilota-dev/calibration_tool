@@ -65,6 +65,7 @@ commands:
               cpack
               mkdir artifacts
               cp *.deb artifacts
+              cp *.tar.gz artifacts
       - run:
           name: Run LDD command
           command: |
