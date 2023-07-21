@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.10)
-project(calibration_tool)
+project(calibration_tool VERSION 1.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_helpers.cmake")
+include(build_helpers)
+
 detectOS()
 
 # Preprocessor Macros
@@ -79,10 +81,6 @@ if(UNIX AND NOT APPLE)
     # TODO: Remove this once vk_calibrate receives path directly.
     install(FILES ${KB4_PRIOR} DESTINATION /opt/vilota/bin/priors/kb4)
     install(FILES ${RADTAN_PRIOR} DESTINATION /opt/vilota/bin/priors/radtan)
-
-    set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-    set(CPACK_PACKAGE_VERSION "1.1.0")
-    set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tejas") # replace with your name
-    set(CPACK_GENERATOR "DEB")
-    include(CPack)
 endif()
+
+include(cpack_config)
