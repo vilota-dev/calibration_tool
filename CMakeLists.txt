@@ -8,6 +8,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # cmake default: "-O3 -DNDEBUG"
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 
+option(HUAWEI "Enable only Huawei specific widgets" OFF)
+
 # configure build types and build c-flags
 if(NOT CMAKE_BUILD_TYPE)
     # Release, RelWithAssert, RelWithEigenNan
