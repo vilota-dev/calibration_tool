@@ -7,9 +7,17 @@ set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # cmake default: "-O3 -DNDEBUG"
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
-
 option(HUAWEI "Enable only Huawei specific widgets" OFF)
-if(HUAWEI)
+
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE CURRENT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(CURRENT_BRANCH STREQUAL "hwsg_working")
+    message(STATUS "Building for HUAWEI")
     add_definitions(-DHUAWEI)
 endif()
 
