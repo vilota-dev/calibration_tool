@@ -36,3 +36,6 @@
 [submodule "thread-pool"]
 	path = external/thread-pool
 	url = https://github.com/bshoshany/thread-pool
+[submodule "SPSCQueue"]
+	path = external/SPSCQueue
+	url = https://github.com/rigtorp/SPSCQueue
