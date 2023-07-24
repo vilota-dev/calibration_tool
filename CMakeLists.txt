@@ -24,7 +24,7 @@ endif()
 # configure build types and build c-flags
 if(NOT CMAKE_BUILD_TYPE)
     # Release, RelWithAssert, RelWithEigenNan
-    set(CMAKE_BUILD_TYPE Release) # Choice of Release (ignore assert) and RelWithDebInfo (includes assert)
+    set(CMAKE_BUILD_TYPE RelWithDebInfo) # Choice of Release (ignore assert) and RelWithDebInfo (includes assert)
 endif()
 message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
