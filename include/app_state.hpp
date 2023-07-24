@@ -16,7 +16,7 @@
 class AppState {
 private:
     // Constructor and destructor should be private
-    AppState() : rosbag_files(), selected_bag(0), thread_pool(std::thread::hardware_concurrency() - 1) {}
+    AppState() : rosbag_files(), selected_bag(0), thread_pool(/*std::thread::hardware_concurrency() - 1*/20) {}
     ~AppState() = default;
 
     int selected_bag = 0; // selected rosbag_file for display
