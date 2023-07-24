@@ -48,18 +48,19 @@ add_subdirectory("ecal-common/cpp")
 add_library(non_gui INTERFACE)
 
 target_include_directories(non_gui INTERFACE
-        "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog_extended/src/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/cereal/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/eigen"
-        "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/Sophus"
-        "${CMAKE_CURRENT_SOURCE_DIR}/apriltag/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ros"
-        "${OpenCV_INCLUDE_DIRS}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
-        "${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include"
-        )
+    "${CMAKE_CURRENT_SOURCE_DIR}/spdlog/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog_extended/src/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/cereal/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/eigen"
+    "${CMAKE_CURRENT_SOURCE_DIR}/basalt-headers/thirdparty/Sophus"
+    "${CMAKE_CURRENT_SOURCE_DIR}/apriltag/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ros"
+    "${OpenCV_INCLUDE_DIRS}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ecal-common/cpp/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/thread-pool/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/SPSCQueue/include"
+)
 
 if(NOT TBB_USE_GLIBCXX_VERSION AND UNIX AND NOT APPLE)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
