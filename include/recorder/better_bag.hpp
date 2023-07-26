@@ -51,7 +51,6 @@ namespace vk {
             temp.ts = ts;
             temp.img = img;
             this->write_queue.push(std::move(temp));
-            spdlog::debug("Pushed to write queue, size: {}", write_queue.size());
         }
 
     private:
