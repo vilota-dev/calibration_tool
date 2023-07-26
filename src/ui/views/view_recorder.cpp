@@ -12,7 +12,7 @@ ViewRecorder::ViewRecorder()
     dataset_recorder(),
     display_imgs(),
     display_params() {
-    this->display_imgs = std::make_shared<std::vector<cv::Mat>>();
+    this->display_imgs = std::make_shared<std::unordered_map<std::string, cv::Mat>>();
     this->display_params.RefreshImage = true;
 }
 
@@ -95,6 +95,12 @@ void ViewRecorder::draw_controls() {
         ImVec2 button_size = ImGui::CalcItemSize(ImVec2{avail.x / 2, 50}, 0.0f, 0.0f);
 
         if (ImGui::Button("Start Recording", button_size)) {
+            for (const auto& cam : this->selected_preset.get_params()) {
+                for (const auto& topic : cam.camera_topics) {
+                    std::string prefixed_topic = cam.tf_prefix + topic;
+                    spdlog::info("Subscribing to {}", prefixed_topic);
+                }
+            }
             this->dataset_recorder.init(this->selected_preset, this->selected_mode, this->display_imgs);
             dataset_recorder.start_record();
         }
@@ -155,16 +161,17 @@ void ViewRecorder::draw_cam_view() {
             auto num_cams = this->selected_preset.get_num_cams();
 
             ImGui::Columns(num_cams);
+            std::string prefixed_topic;
+
 
             if (this->dataset_recorder.is_init()) {
-                int idx = 0;
                 // for each preset
                 for (const auto& cam : selected_preset.get_params()) {
                     // for each camera in the preset
-                    for (int i = 0; i < cam.camera_topics.size(); i++) {
-                        ImmVision::Image(cam.camera_topics[i], display_imgs->at(idx), &this->display_params);
+                    for (const auto& topic : cam.camera_topics) {
+                        prefixed_topic = cam.tf_prefix + topic;
+                        ImmVision::Image(prefixed_topic, (*display_imgs)[prefixed_topic], &this->display_params);
                         ImGui::NextColumn();
-                        idx++;
                     }
                 }
             }
