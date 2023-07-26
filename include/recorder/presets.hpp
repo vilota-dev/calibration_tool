@@ -30,11 +30,12 @@ namespace vk {
                 vk::CameraParams param;
                 param.tf_prefix = prefix;
                 spdlog::trace("Created CameraParams with tf_prefix {}", param.tf_prefix);
-                for (const auto& topic : topics) {
-                    if (topic.substr(0, topic.find_last_of('/')) == prefix) {
-                        size_t pos = topic.find('/');
-                        param.camera_topics.push_back(topic.substr(pos+1));
-                        spdlog::trace("Added topic {} to preset {}", topic.substr(pos+1),this->name);
+                param.camera_topics.clear();
+                for (const auto& prefixed_topic : topics) {
+                    std::string topic = prefixed_topic.substr(prefixed_topic.find_last_of('/') + 1);
+                    if (prefixed_topic.substr(0, 3) == prefix) {
+                        param.camera_topics.push_back(topic);
+                        spdlog::trace("Added topic {} to preset {}", topic,this->name);
                     }
                 }
                 this->num_cams += param.camera_topics.size();
