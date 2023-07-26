@@ -406,27 +406,25 @@ namespace basalt {
 
             // Section: Read the images and convert them to cv::Mat and store them in image_data
             for (auto ts : this->image_timestamps) {
-                spdlog::debug("Size of image_data_idx[{}]: {}", ts, this->image_data_idx[ts].size());
                 std::vector<ImageData> raw_data = this->get_image_data(ts);
 
                 if (raw_data.empty()) {
                     spdlog::error("No image data found for timestamp {}", ts);
                     continue;
-                } else {
-                    spdlog::info("Found {} images for timestamp {}", raw_data.size(), ts);
                 }
                 // std::map<int64_t, std::vector<cv::Mat>> image_data;
                 std::vector<cv::Mat> converted_images;
 
                 // Convert the images to cv::Mat
                 for (auto & i : raw_data) {
-                    cv::Mat image_mat_16u;
-                    try {
-                        image_mat_16u = cv::Mat(i.img->h, i.img->w, CV_8U, i.img->ptr, i.img->pitch);
-                    } catch (const std::exception &e) {
-                        spdlog::error("Error converting image to cv::Mat: {}", e.what());
+                    // check if i is a nullptr
+                    if (!i.img) {
+                        // Create an empty image and push it to the vector
+                        cv::Mat empty_image;
+                        converted_images.push_back(empty_image);
                         continue;
                     }
+                    cv::Mat image_mat_16u(i.img->h, i.img->w, CV_16U, i.img->ptr, i.img->pitch);
 
                     // Convert the 16-bit image to 8-bit
                     cv::Mat img_8u;
