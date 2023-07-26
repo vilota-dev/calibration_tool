@@ -406,18 +406,27 @@ namespace basalt {
 
             // Section: Read the images and convert them to cv::Mat and store them in image_data
             for (auto ts : this->image_timestamps) {
+                spdlog::debug("Size of image_data_idx[{}]: {}", ts, this->image_data_idx[ts].size());
                 std::vector<ImageData> raw_data = this->get_image_data(ts);
 
                 if (raw_data.empty()) {
                     spdlog::error("No image data found for timestamp {}", ts);
                     continue;
+                } else {
+                    spdlog::info("Found {} images for timestamp {}", raw_data.size(), ts);
                 }
                 // std::map<int64_t, std::vector<cv::Mat>> image_data;
                 std::vector<cv::Mat> converted_images;
 
                 // Convert the images to cv::Mat
                 for (auto & i : raw_data) {
-                    cv::Mat image_mat_16u(i.img->h, i.img->w, CV_16U, i.img->ptr, i.img->pitch);
+                    cv::Mat image_mat_16u;
+                    try {
+                        image_mat_16u = cv::Mat(i.img->h, i.img->w, CV_8U, i.img->ptr, i.img->pitch);
+                    } catch (const std::exception &e) {
+                        spdlog::error("Error converting image to cv::Mat: {}", e.what());
+                        continue;
+                    }
 
                     // Convert the 16-bit image to 8-bit
                     cv::Mat img_8u;
@@ -446,16 +455,22 @@ namespace basalt {
 
             auto it = image_data_idx.find(t_ns);
 
-            if (it != image_data_idx.end())
+            if (it != image_data_idx.end()) {
+
                 for (size_t i = 0; i < num_cams; i++) {
                     ImageData &id = res[i];
 
-                    if (!it->second[i].has_value()) continue;
+                    if (!it->second[i].has_value()) {
+                        spdlog::warn("missing image for this time stamp: {}", t_ns);
+                        continue;
+                    };
 
                     m.lock();
                     sensor_msgs::ImageConstPtr img_msg =
                             bag->instantiateBuffer<sensor_msgs::Image>(*it->second[i]);
                     m.unlock();
+
+                    // need to add a white image here
 
                     //        std::cerr << "img_msg->width " << img_msg->width << "
                     //        img_msg->height "
@@ -499,7 +514,7 @@ namespace basalt {
                         std::abort();
                     }
                 }
-
+            }
             return res;
         }
 
