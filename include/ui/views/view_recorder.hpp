@@ -24,6 +24,6 @@ private:
     vk::RecordMode selected_mode; // snapshot or continuous
     vk::Preset selected_preset;
     vk::RosbagDatasetRecorder dataset_recorder;
-    std::shared_ptr<std::vector<cv::Mat>> display_imgs; // vector of images to display, live view
+    std::shared_ptr<std::unordered_map<std::string, cv::Mat>> display_imgs; // vector of images to display, live view
     ImmVision::ImageParams display_params; // parameters for the ImmVision API
 };
