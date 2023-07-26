@@ -7,6 +7,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 #include <spdlog/spdlog.h>
 #include "nfd.hpp"
+#include <tracy/Tracy.hpp>
 
 #include <unistd.h>
 
@@ -227,7 +228,7 @@ void ViewCornerDetector::draw_content() {
         ImGui::End();
         return;
     }
-
+    ZoneScopedN("ViewCornerDetector::draw_content");
     auto &app_state = AppState::get_instance();
 
     /*

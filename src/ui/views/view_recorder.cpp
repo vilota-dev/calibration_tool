@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <tracy/Tracy.hpp>
 
 ViewRecorder::ViewRecorder()
     : View("ROS .bag Dataset Recorder"),
@@ -21,6 +22,7 @@ void ViewRecorder::draw_content() {
         ImGui::End();
         return;
     }
+    ZoneScopedN("ViewRecorder::draw_content");
     using namespace vk;
 
     this->draw_controls();
