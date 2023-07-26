@@ -6,6 +6,7 @@
 #include <imgui_impl_glfw.h>
 #include <implot.h>
 #include <spdlog/spdlog.h>
+#include <tracy/Tracy.hpp>
 
 namespace vk {
     Window::Window() {
@@ -86,6 +87,7 @@ namespace vk {
         }
 
         glfwSwapBuffers(window);
+        FrameMark;
     }
 
     void Window::init_glfw() {

@@ -1,3 +1,5 @@
+include(FetchContent)
+
 set(GLFW_BUILD_EXAMPLES OFF CACHE INTERNAL "Build the GLFW example programs")
 set(GLFW_BUILD_TESTS OFF CACHE INTERNAL "Build the GLFW test programs")
 set(GLFW_BUILD_DOCS OFF CACHE INTERNAL "Build the GLFW documentation")
@@ -36,6 +38,15 @@ target_include_directories(gui PUBLIC
 target_link_libraries(gui PUBLIC glfw OpenGL::GL ${OpenCV_LIBS})
 
 #### Non-gui libraries
+FetchContent_Declare (
+    tracy
+    GIT_REPOSITORY https://github.com/wolfpld/tracy.git
+    GIT_TAG master
+    GIT_SHALLOW TRUE
+    GIT_PROGRESS TRUE
+)
+message(STATUS "Fetching Tracy")
+FetchContent_MakeAvailable (tracy)
 
 add_subdirectory("nativefiledialog_extended")
 add_subdirectory("ros")
@@ -77,5 +88,6 @@ target_link_libraries(non_gui INTERFACE
         rosbag
         pthread
         ecal_camera::ecal_camera
-        )
+        TracyClient
+)
 
