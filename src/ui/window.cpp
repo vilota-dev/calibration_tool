@@ -6,6 +6,7 @@
 #include <imgui_impl_glfw.h>
 #include <implot.h>
 #include <spdlog/spdlog.h>
+#include <tracy/Tracy.hpp>
 
 namespace vk {
     Window::Window() {
@@ -57,8 +58,10 @@ namespace vk {
         // Render views
         // TODO: Move to ContentRegistry and call get_entries() to get the list of views to render in a loop
         this->view_corner_detector.draw_content();
-        // this->view_recorder.draw_content();
-//        this->view_rosbag_inspector.draw_content();
+#ifndef HWSG
+        this->view_recorder.draw_content();
+        this->view_rosbag_inspector.draw_content();
+#endif
     }
 
     void Window::frame_end() {
@@ -84,6 +87,7 @@ namespace vk {
         }
 
         glfwSwapBuffers(window);
+        FrameMark;
     }
 
     void Window::init_glfw() {

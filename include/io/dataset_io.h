@@ -417,6 +417,13 @@ namespace basalt {
 
                 // Convert the images to cv::Mat
                 for (auto & i : raw_data) {
+                    // check if i is a nullptr
+                    if (!i.img) {
+                        // Create an empty image and push it to the vector
+                        cv::Mat empty_image;
+                        converted_images.push_back(empty_image);
+                        continue;
+                    }
                     cv::Mat image_mat_16u(i.img->h, i.img->w, CV_16U, i.img->ptr, i.img->pitch);
 
                     // Convert the 16-bit image to 8-bit
@@ -446,16 +453,22 @@ namespace basalt {
 
             auto it = image_data_idx.find(t_ns);
 
-            if (it != image_data_idx.end())
+            if (it != image_data_idx.end()) {
+
                 for (size_t i = 0; i < num_cams; i++) {
                     ImageData &id = res[i];
 
-                    if (!it->second[i].has_value()) continue;
+                    if (!it->second[i].has_value()) {
+                        spdlog::warn("missing image for this time stamp: {}", t_ns);
+                        continue;
+                    };
 
                     m.lock();
                     sensor_msgs::ImageConstPtr img_msg =
                             bag->instantiateBuffer<sensor_msgs::Image>(*it->second[i]);
                     m.unlock();
+
+                    // need to add a white image here
 
                     //        std::cerr << "img_msg->width " << img_msg->width << "
                     //        img_msg->height "
@@ -499,7 +512,7 @@ namespace basalt {
                         std::abort();
                     }
                 }
-
+            }
             return res;
         }
 

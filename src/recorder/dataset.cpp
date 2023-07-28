@@ -14,14 +14,12 @@ namespace vk {
             return;
         }
 
-        // Write to the this->display_imgs using the frame->image cv::Mat
-        int idx = 0;
         for (auto &frame: dataVector) {
-            this->m_display_imgs->at(idx) = frame->image;
-            idx++;
+            (*this->m_display_imgs)[frame->prefixed_topic] = frame->image;
         }
 
-        std::lock_guard<std::mutex> lock(this->m_mutex);
+        std::string prefix = dataVector[0]->prefixed_topic.substr(0, 3);
+
         switch (this->m_mode) {
             case RecordMode::CONTINUOUS: {
                 if (this->m_recording) {
@@ -37,25 +35,27 @@ namespace vk {
                         writeMsg->header.seq = frame->seq;
 
                         writeMsg->encoding = frame->encoding;
+                        // if mono thens step size is width.
 
                         writeMsg->height = frame->image.rows;
                         writeMsg->width = frame->image.cols;
+//                        writeMsg->step = frame->w
 
                         auto data_size = frame->image.total() * frame->image.elemSize();
 
                         writeMsg->data.resize(data_size);
                         std::memcpy(writeMsg->data.data(), frame->image.data, data_size);
-
-                        this->m_bag->write(streamName, timestamp, writeMsg);
+                        this->m_better_bag->write(streamName, timestamp, writeMsg);
                     }
                     this->m_num_msgs++;
                 }
                 break;
             }
             case RecordMode::SNAPSHOT: {
-                if (this->m_recording && this->m_take_snapshot) {
+                if (this->m_recording && this->m_take_snapshot_map[prefix]) {
                     for (auto &frame: dataVector) {
                         std::string streamName = frame->prefixed_topic;
+                        spdlog::debug("I AM INSIDE: {}", streamName);
 
                         sensor_msgs::ImagePtr writeMsg(new sensor_msgs::Image);
 
@@ -66,6 +66,7 @@ namespace vk {
                         writeMsg->header.seq = frame->seq;
 
                         writeMsg->encoding = frame->encoding;
+                        spdlog::trace("Encoding: {}", frame->encoding);
 
                         writeMsg->height = frame->image.rows;
                         writeMsg->width = frame->image.cols;
@@ -75,29 +76,27 @@ namespace vk {
                         writeMsg->data.resize(data_size);
                         std::memcpy(writeMsg->data.data(), frame->image.data, data_size);
 
-                        this->m_bag->write(streamName, timestamp, writeMsg);
+                        this->m_better_bag->write(streamName, timestamp, writeMsg);
                     }
                     this->m_num_msgs++;
-                    this->m_take_snapshot = false;
+                    this->m_take_snapshot_map[prefix] = false;
                 }
                 break;
             }
             default:
                 throw std::runtime_error("Undefined recording mode");
-                break;
         }
     }
 
     void RosbagDatasetRecorder::callbackImu(const vk::ImuFrameData::Ptr data) {}
 
     void RosbagDatasetRecorder::start_record() {
-        // this->m_bag->open(this->m_bag_name, rosbag::bagmode::Write);
+        // Already open bag in write mode in the init
         this->m_recording = true;
     }
 
     void RosbagDatasetRecorder::stop_record() {
-        this->m_recording = false;
-        this->m_bag->close();
-        spdlog::trace("Closing bag file at {}", this->m_bag_name);
+        this->m_recording = false; // for callbacks to stop recording as well
+        this->m_better_bag->close();
     }
 }// namespace vk

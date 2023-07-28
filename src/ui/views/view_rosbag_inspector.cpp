@@ -2,6 +2,7 @@
 
 #include <imgui_internal.h>
 #include <spdlog/spdlog.h>
+#include <tracy/Tracy.hpp>
 
 static const ImVec4 white = from_rgba(0xff, 0xff, 0xff, 0xff, true);
 static const ImVec4 grey{ 0.5f,0.5f,0.5f,1.f };
@@ -16,6 +17,7 @@ void ViewRosbagInspector::draw_content() {
         ImGui::End();
         return;
     }
+    ZoneScopedN("ViewRosbagInspector::draw_content");
 
     this->draw_files(); ImGui::SameLine();
     this->draw_bag_content();

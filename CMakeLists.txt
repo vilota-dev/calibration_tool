@@ -5,7 +5,34 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_REQUIRED_FLAGS "-Wno-error")
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # cmake default: "-O3 -DNDEBUG"
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
+option(HWSG "Enable only corner detector widget" OFF)
+option(TRACY_ENABLE "Enable profiling" ON)
+
+execute_process(
+    COMMAND git rev-parse --abbrev-ref HEAD
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    OUTPUT_VARIABLE CURRENT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+if(CURRENT_BRANCH STREQUAL "hwsg_working")
+    message(STATUS "Building only corner detector widget")
+    add_definitions(-DHWSG)
+endif()
+
+# configure build types and build c-flags
+if(NOT CMAKE_BUILD_TYPE)
+    # Release, RelWithAssert, RelWithEigenNan
+    set(CMAKE_BUILD_TYPE RelWithDebInfo) # Choice of Release (ignore assert) and RelWithDebInfo (includes assert)
+endif()
+message(STATUS "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+
+# Set default installation directory
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation Directory" FORCE)
+endif()
 
 include(build_helpers)
 
@@ -45,42 +72,29 @@ add_executable(${PROJECT_NAME} ${APPLICATION_TYPE} ${SOURCES})
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE gui non_gui)
 
-if (APPLE)
-    # Do nothing
-elseif (UNIX AND NOT APPLE)
-    set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN")
-    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-        set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Installation Directory" FORCE)
-    endif()
-endif ()
-
-set(PRIOR_FILES
-        ${CMAKE_SOURCE_DIR}/priors/vk180-prior.json
-        ${CMAKE_SOURCE_DIR}/priors/vk180-prior-ds.json
-        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior.json
-        ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior-ds.json
-        ${CMAKE_SOURCE_DIR}/priors/calibration-prior-kb4.json
-        ${CMAKE_SOURCE_DIR}/priors/calibration-prior-radtan8.json)
-
 # TODO: Temporary, change once vk_calibrate receives prior path directly
 set(KB4_PRIOR ${CMAKE_SOURCE_DIR}/priors/calibration-prior-kb4.json)
 set(RADTAN_PRIOR ${CMAKE_SOURCE_DIR}/priors/calibration-prior-radtan8.json)
 
 # Installs
-if(UNIX AND NOT APPLE)
-    install(TARGETS ${PROJECT_NAME}
-            RUNTIME DESTINATION bin
-            )
+install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME})
+set_target_properties(${PROJECT_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN/../lib" )
 
-    install(TARGETS gui non_gui
-            LIBRARY DESTINATION lib
-            )
+install(TARGETS gui non_gui
+        LIBRARY DESTINATION lib)
 
-    install(FILES ${PRIOR_FILES} DESTINATION /opt/vilota/bin/priors)
-    # TODO: Remove this once vk_calibrate receives path directly.
-    install(FILES ${KB4_PRIOR} DESTINATION /opt/vilota/bin/priors/kb4)
-    install(FILES ${RADTAN_PRIOR} DESTINATION /opt/vilota/bin/priors/radtan)
-endif()
+set(PRIOR_FILES
+    ${CMAKE_SOURCE_DIR}/priors/vk180-prior.json
+    ${CMAKE_SOURCE_DIR}/priors/vk180-prior-ds.json
+    ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior.json
+    ${CMAKE_SOURCE_DIR}/priors/vkl-m12-prior-ds.json
+    ${CMAKE_SOURCE_DIR}/priors/calibration-prior-kb4.json
+    ${CMAKE_SOURCE_DIR}/priors/calibration-prior-radtan8.json)
+
+install(FILES ${PRIOR_FILES} DESTINATION bin/priors)
+# TODO: Remove this once vk_calibrate receives path directly.
+#install(FILES ${KB4_PRIOR} DESTINATION /bin/priors/kb4)
+#install(FILES ${RADTAN_PRIOR} DESTINATION /bin/priors/radtan)
+
 
 include(cpack_config)

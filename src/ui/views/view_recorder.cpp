@@ -3,15 +3,17 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <tracy/Tracy.hpp>
 
 ViewRecorder::ViewRecorder()
     : View("ROS .bag Dataset Recorder"),
     custom_camera(0),
-    recorder_params(),
     selected_mode(vk::RecordMode::SNAPSHOT),
+    selected_preset(vk::getPresets()[0]),
     dataset_recorder(),
     display_imgs(),
     display_params() {
+    this->display_imgs = std::make_shared<std::unordered_map<std::string, cv::Mat>>();
     this->display_params.RefreshImage = true;
 }
 
@@ -20,6 +22,7 @@ void ViewRecorder::draw_content() {
         ImGui::End();
         return;
     }
+    ZoneScopedN("ViewRecorder::draw_content");
     using namespace vk;
 
     this->draw_controls();
@@ -46,14 +49,13 @@ void ViewRecorder::draw_controls() {
         std::vector<Preset>& presets = getPresets();
 
         static int preset_current_idx = 0;
-        const char* selectedPresetName = presets[preset_current_idx].name.c_str();
+        const char* selectedPresetName = presets[preset_current_idx].get_name().c_str();
         if (ImGui::BeginCombo("Choose Custom Preset", selectedPresetName)) {
             for (int n = 0; n < presets.size(); n++) {
                 const bool is_selected = (preset_current_idx == n);
-                if (ImGui::Selectable(presets[n].name.c_str(), is_selected)) {
+                if (ImGui::Selectable(presets[n].get_name().c_str(), is_selected)) {
                     preset_current_idx = n;
-                    recorder_params.camera_topics = presets[n].topics;
-                    recorder_params.tf_prefix = presets[n].tf_prefix;
+                    this->selected_preset = presets[preset_current_idx];
                 }
 
                 if (is_selected)
@@ -62,27 +64,28 @@ void ViewRecorder::draw_controls() {
             ImGui::EndCombo();
         }
     } else {
-        // Add tf_prefix string input as well as cam_topics
-        ImGui::InputText("tf_prefix", &recorder_params.tf_prefix);
-
-        static char inputBuffer[256] = "";
-        bool clicked = ImGui::InputText("New Topic", inputBuffer, IM_ARRAYSIZE(inputBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
-        ImGui::SameLine();
-        if (ImGui::Button("Add") || clicked) {
-            recorder_params.camera_topics.emplace_back(inputBuffer);
-            memset(inputBuffer, 0, sizeof(inputBuffer));
-        }
-
-        for (int i = 0; i < recorder_params.camera_topics.size(); ++i) {
-            ImGui::Text("%s", recorder_params.camera_topics[i].c_str());
-
-            ImGui::SameLine();
-            if (ImGui::SmallButton("x")) {
-                // Remove the item from the list
-                recorder_params.camera_topics.erase(recorder_params.camera_topics.begin() + i);
-                --i;
-            }
-        }
+        ImGui::Text("Unsupported for now, please use presets");
+//        // Add tf_prefix string input as well as cam_topics
+//        ImGui::InputText("tf_prefix", &recorder_params.tf_prefix);
+//
+//        static char inputBuffer[256] = "";
+//        bool clicked = ImGui::InputText("New Topic", inputBuffer, IM_ARRAYSIZE(inputBuffer), ImGuiInputTextFlags_EnterReturnsTrue);
+//        ImGui::SameLine();
+//        if (ImGui::Button("Add") || clicked) {
+//            recorder_params.camera_topics.emplace_back(inputBuffer);
+//            memset(inputBuffer, 0, sizeof(inputBuffer));
+//        }
+//
+//        for (int i = 0; i < recorder_params.camera_topics.size(); ++i) {
+//            ImGui::Text("%s", recorder_params.camera_topics[i].c_str());
+//
+//            ImGui::SameLine();
+//            if (ImGui::SmallButton("x")) {
+//                // Remove the item from the list
+//                recorder_params.camera_topics.erase(recorder_params.camera_topics.begin() + i);
+//                --i;
+//            }
+//        }
     }
     /*
      * Draw the buttons for starting and stopping the recording
@@ -94,7 +97,13 @@ void ViewRecorder::draw_controls() {
         ImVec2 button_size = ImGui::CalcItemSize(ImVec2{avail.x / 2, 50}, 0.0f, 0.0f);
 
         if (ImGui::Button("Start Recording", button_size)) {
-            this->dataset_recorder.init(this->recorder_params, this->selected_mode, this->display_imgs);
+            for (const auto& cam : this->selected_preset.get_params()) {
+                for (const auto& topic : cam.camera_topics) {
+                    std::string prefixed_topic = cam.tf_prefix + topic;
+                    spdlog::info("Subscribing to {}", prefixed_topic);
+                }
+            }
+            this->dataset_recorder.init(this->selected_preset, this->selected_mode, this->display_imgs);
             dataset_recorder.start_record();
         }
         ImGui::PopStyleColor(2);
@@ -104,7 +113,7 @@ void ViewRecorder::draw_controls() {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.4f, 0.2f, 0.2f, 1.0f});
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.6f, 0.2f, 0.2f, 1.0f});
         if (ImGui::Button("Stop Recording", button_size)) {
-            dataset_recorder.stop_record();
+            this->dataset_recorder.stop_record();
         }
         ImGui::PopStyleColor(2);
 
@@ -123,7 +132,6 @@ void ViewRecorder::draw_controls() {
             }
         }
     }
-
 
     ImGui::EndChild();
 }
@@ -152,16 +160,22 @@ void ViewRecorder::draw_cam_view() {
 
             ImGui::Text("Press Start Recording to begin recording the dataset");
         } else {
-            auto num_cams = this->recorder_params.camera_topics.size();
+            auto num_cams = this->selected_preset.get_num_cams();
 
             ImGui::Columns(num_cams);
+            std::string prefixed_topic;
 
-            int idx = 0;
-            for (auto &cam_name: this->recorder_params.camera_topics) {
-                this->display_params.ZoomKey = cam_name; // fix doesn't change
-                ImmVision::Image(cam_name, display_imgs->at(idx), &this->display_params);
-                ImGui::NextColumn();
-                idx++;
+
+            if (this->dataset_recorder.is_init()) {
+                // for each preset
+                for (const auto& cam : selected_preset.get_params()) {
+                    // for each camera in the preset
+                    for (const auto& topic : cam.camera_topics) {
+                        prefixed_topic = cam.tf_prefix + topic;
+                        ImmVision::Image(prefixed_topic, (*display_imgs)[prefixed_topic], &this->display_params);
+                        ImGui::NextColumn();
+                    }
+                }
             }
         }
     }
