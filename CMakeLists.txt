@@ -8,6 +8,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG")  # cmake default: "-O3 -DNDEBUG"
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/" ${CMAKE_MODULE_PATH})
 option(HWSG "Enable only corner detector widget" OFF)
+option(TRACY_ENABLE "Enable profiling" ON)
 
 execute_process(
     COMMAND git rev-parse --abbrev-ref HEAD
