@@ -1,70 +1,163 @@
-## Todo
-**Important**
-- [ ] Write wireframe for the visualizer, maybe a scrub bar for the rosbag images
-- [ ] Change basalt-headers to be using 8 bit instead of 16 bit, so no need for conversion.
-  - Currently using this [method](https://stackoverflow.com/questions/51549624/how-to-convert-16-bit-image-to-8-bit-in-opencv-c) to convert 16 bit to 8 bit.
-  - API can be found [here](https://docs.opencv.org/3.4/d3/d63/classcv_1_1Mat.html)
-- [ ] Add drag and drop file feature for ros bag files, use the [librealsense code](https://github.com/IntelRealSense/librealsense/blob/b874e42685aed1269bc57a2fe5bf14946deb6ede/tools/rosbag-inspector/rs-rosbag-inspector.cpp#LL89C1-L89C86) (rosbag inspector)
-- [ ] Overload [] operator for rosbag dataset? so we can get the image directly using a timestamp instead of calling .get_image_data
-**Not important**
-- [ ] Change glfw to submodule dependency instead.
+<div align="center">
+    <img src="resources/logo.png" alt="Logo" width="200" height="200">
+    <h1>vk-calibrate</h1>
+    <a href="https://github.com/vilota-dev/calibration_tool/blob/main/LICENSE"><img src="https://img.shields.io/github/license/vilota-dev/calibration_tool" /></a>
+    <a href="https://github.com/vilota-dev/calibration_tool/graphs/contributors"><img src="https://img.shields.io/github/contributors/vilota-dev/calibration_tool.svg?style=flat" /></a>   
+    <a href="https://github.com/vilota-dev/calibration_tool/network/members"><img src="https://img.shields.io/github/forks/vilota-dev/calibration_tool.svg?style=flat" /></a>   
+    <a href="https://github.com/vilota-dev/calibration_tool/stargazers"><img src="https://img.shields.io/github/stars/vilota-dev/calibration_tool.svg?style=flat" /></a>   
+    <a href="https://github.com/vilota-dev/calibration_tool/issues"><img src="https://img.shields.io/github/issues/vilota-dev/calibration_tool.svg?style=flat" /></a>   
+    <a href="https://app.circleci.com/pipelines/github/vilota-dev/calibration_tool"><img src="https://circleci.com/gh/vilota-dev/calibration_tool.svg?style=shield" /></a>   
+<br />
+    <br />
+    <a href="https://app.circleci.com/projects/project-dashboard/github/vilota-dev/">Download</a>
+    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+    <a href="https://vilota.ai/#contact">Contact Us</a>
+  <br />
+  <br />
 
-## Trouble shooting stuff
-- NFDE library changed from nativefiledialog-extended to ..._extended to be valid for cmake (hyphen in name not valid)
-- #define IMGUI_DEFINE_MATH_OPERATORS error, most likely an error in the order with which things have been imported
-  - Forked immvision and pushed changes to repo to quick fix the include headers in src_all_in_one.h
-- Segmentation faults -> More often then not it's got something to do with uninitialized vectors and ImGui library.
-- Use develop branch for most vilota repos
-- basalt-sqrt does not build on macos, the original basalt does, mirror as well.
-- Assertion in basalt-header is commented out, need to make a fork instead
-- image.h has a overloaded constructor for cv::Mat
+vk-calibrate is an integrated visualization and calibration tool for robotics, available [as a desktop app](https://app.circleci.com/projects/project-dashboard/github/vilota-dev/) on Linux and macOS.
+</div>
 
-## Setup
+# Screenshots
+
+### Corner Detection & ROS `.bag` dataset playback
+<p align="center">
+  <img alt="Light" src="resources/corner_detection.png" width="45%">
+&nbsp; &nbsp; &nbsp; &nbsp;
+  <img alt="Dark" src="resources/corner_detection_menu.png" width="45%">
+</p>
+
+### ROS `.bag` dataset recording
+<p align="center">
+  <img alt="Light" src="resources/rosbag_recorder.png" width="50%">
+</p>
+
+### ROS `.bag` dataset Inspector 
+<p align="center">
+  <img alt="Light" src="resources/rosbag_inspector.png" width="50%">
+</p>
+
+
+vk-calibrate is a tool for all things related to calibrating vilota's vk suite of cameras, from recording ROS .bag datasets,
+to corner detection (checkerboard, apriltags).
+
+# Features
+* Corner detection (checkerboard, apriltags)
+  * Integrated with OpenCV's corner detection with sub-pixel refinement
+  * Integrated with Basalt's corner detection algorithms and corner refinement
+  * Generates serialized binary containing corner detection results and metadata, to feed into [Basalt's calibration pipeline](https://cvg.cit.tum.de/research/vslam/basalt)
+  * (REMOVED) Support for libcbdetect corner detection algorithm (poor performance on worse datasets)
+  * Automatic serialization into custom cereal binary format
+* ROS `.bag` dataset recording functionality
+  * Record synchronized ROS `.bag` datasets from multiple cameras (tested up to 6 cameras, VK360)
+  * Support for cameras that are not hardware synchronized
+  * Support for recording IMU data
+  * Supports continuous and snapshot recording modes
+  * Has presets for VK180, VK360(front), VK360(back), VK360(full)
+* ROS `.bag` dataset inspection
+  * Inspect the topics and messages of `.bag` files
+  * Supports IMU, Image, PoseStamped, and a few other message types
+  * Thread-safe wrapper around ROS's `.bag` API using rigtorp's high performance SPSC queue
+* Integration with Basalt's calibration pipeline
+  * Launch Basalt's calibration pipeline from within the GUI, and inject the serialized binary generated by vk-calibrate
+  * Install calibration priors for Vilota's suite of products
+
+### Developer Notes
+* AppState is an instance of a Meyer's threadsafe singleton, access it using AppState::getInstance() to access the global state
+
+### Built With
+
+* C++20
+* CMake
+* OpenCV
+* eCAL 5.12
+* ROS
+* Basalt
+* Boost
+* [BS::thread_pool](https://github.com/bshoshany/thread-pool)
+* [Rigtorp's SPSC queue](https://rigtorp.se/ringbuffer/)
+* Extended Native File Dialog
+* spdlog
+* tracy (for profiling)
+* cereal
+* Intel TBB
+
+**GUI Related:**
+* imgui
+* glad
+* glfw 
+* OpenGL
+* immvision
+* implot
+
+## How to run
+You can either,
+1. Download the binaries directly from CircleCI artifacts, and install them
+2. Build from source, following the instructions below
+   
+## Install prerequisites 
+
+1. Install Cap'n Proto
+```sh
+git clone https://github.com/capnproto/capnproto.git capnproto
+cd capnproto/c++
+git checkout v0.10.2
+git submodule update --init --recursive
+autoreconf -i
+./configure
+make -j2 # check # skip check for now
+sudo make install
 ```
-mkdir build && cd build
-cmake ..
-cmake --build . -- -j
+
+2. Install eCAL
+```sh
+sudo add-apt-repository -y ppa:ecal/ecal-5.11
+sudo apt-get update
+sudo apt-get install ecal
 ```
 
-### Prerequisites 
-
-C++
-```
-sudo apt-get install gcc g++
-```
-
-Libraries for graphics (Linux)
-
-```
-sudo apt-get install libglfw3 libglfw3-dev xorg xorg-dev
+3. Install other dependencies
+```sh
+sudo apt-get update
+sudo apt-get install -y cmake libopencv-dev libglfw3-dev libgtk-3-dev libboost-all-dev libeigen3-dev liblz4-dev bzip2
 ```
 
-Libraries for graphics (Mac OS)
+## Building from source
+```sh
+git clone https://github.com/vilota-dev/calibration_tool.git --recursive
+cd calibration_tool
+cmake -S. -Bbuild
+cmake --build build -j2
+cd build
+cpack
+mkdir artifacts
+cp *.deb artifacts
+cp *.tar.gz artifacts
+
+# Just install the deb package you generated 
+sudo dpkg -i calibration_tool-*.deb # replace this with the debian package name
 ```
-brew install glfw
-```
 
-## Preprocessor Macros
-`PROJECT_ROOT`: Points to root of project / where cmake was invoked.
+<!-- CONTRIBUTING -->
+## Contributing
 
-## Submodules
-- [DearImGui](https://github.com/ocornut/imgui/tree/031148dc56d70158b3ad84d9be95b04bb3f5baaf)
-- [ImPlot](https://github.com/epezent/implot/tree/18758e237e8906a97ddf42de1e75793526f30ce9)
-- Basalt-headers
-- Cereal
-- Eigen
-- Glad
-- imgui
-- immvision
-- rosbag
-- spdlog
-- 
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-## Other relevant repos
-- [How to use visualizer in dear imgui application #5920](https://github.com/isl-org/Open3D/issues/5920)
-- https://github.com/vilota-dev/calibration-experiment
-- https://github.com/SMRT-AIST/interactive_slam/tree/master
-- [Visualize point cloud](https://stackoverflow.com/questions/10106288/pcl-visualize-a-point-cloud)
-- [Tanagram](https://www.tangramvision.com/resources/depth-sensor-visualizer)
-- [imgui robot dog app](https://jpieper.com/tag/imgui/)
-- [imgui_ros](https://github.com/lucasw/imgui_ros/tree/melodic): the one with the drag n drop topics
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[circleci-url]: 
+[circleci-shield]: 
